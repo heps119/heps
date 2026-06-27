@@ -10943,8 +10943,7 @@ ${message || '(작성 없음)'}
       window._sb.insert('faq_items', {
         cat: '기본개념',
         question: q,
-        answer: a,
-        sort_order: Date.now()
+        answer: a
       }).then(function(r) {
         if (r && r[0]) {
           item.dataset.sbid = r[0].id;
