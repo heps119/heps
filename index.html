@@ -4005,8 +4005,8 @@
     padding: 0.5rem 0.6rem;
     background: #f0ebe0;
     border-bottom: 2px solid #d4c9b0;
-    position: sticky; top: 60px; z-index: 200;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    position: sticky; top: 58px; z-index: 200;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
   }
   .hed-toolbar button {
     min-width: 30px; height: 28px;
@@ -4025,18 +4025,31 @@
     width: 1px; background: #ccc;
     margin: 2px 4px; align-self: stretch;
   }
-  /* 글자 크기 버튼 */
   .hed-fontsize {
     font-size: 0.72rem !important;
     padding: 0 5px !important;
     min-width: 36px !important;
   }
   .hed-editor {
-    min-height: 400px; padding: 1.2rem 1.4rem;
+    min-height: 400px;
+    padding: 1.5rem 1.4rem 1.2rem; /* 상단 패딩 증가로 툴바 가림 방지 */
     font-family: 'Noto Sans KR', sans-serif;
     font-size: 0.92rem; line-height: 1.9;
     color: #333; outline: none;
     background: white;
+    scroll-margin-top: 120px; /* 툴바 아래로 스크롤 */
+  }
+  /* 에디터 내 표 스타일 */
+  .hed-editor table {
+    border-collapse: collapse; width: 100%;
+    margin: 1rem 0; font-size: 0.9rem;
+  }
+  .hed-editor table td, .hed-editor table th {
+    border: 1px solid #ccc; padding: 0.5rem 0.8rem;
+    min-width: 60px; vertical-align: top;
+  }
+  .hed-editor table th {
+    background: #f0ebe0; font-weight: 600; color: var(--navy);
   }
   .hed-editor {
     min-height: 300px; padding: 1rem 1.2rem;
@@ -9622,31 +9635,33 @@ try {
   // ── 에디터 툴바 HTML 생성 ──
   function createEditorToolbar(targetId) {
     return '<div class="hed-toolbar" data-target="' + targetId + '">' +
-      '<button type="button" title="굵게" onclick="hedCmd(this,\'bold\')"><b>B</b></button>' +
-      '<button type="button" title="기울임" onclick="hedCmd(this,\'italic\')"><i>I</i></button>' +
-      '<button type="button" title="밑줄" onclick="hedCmd(this,\'underline\')"><u>U</u></button>' +
+      '<button type="button" title="굵게 (Ctrl+B)" onclick="hedCmd(this,\'bold\')"><b>B</b></button>' +
+      '<button type="button" title="기울임 (Ctrl+I)" onclick="hedCmd(this,\'italic\')"><i>I</i></button>' +
+      '<button type="button" title="밑줄 (Ctrl+U)" onclick="hedCmd(this,\'underline\')"><u>U</u></button>' +
       '<span class="hed-sep"></span>' +
-      '<button type="button" class="hed-fontsize" title="글자 작게" onclick="hedFontSize(this,\'small\')">A</button>' +
+      '<button type="button" class="hed-fontsize" title="글자 작게" onclick="hedFontSize(this,\'small\')" style="font-size:0.65rem!important">A</button>' +
       '<button type="button" class="hed-fontsize" title="글자 보통" onclick="hedFontSize(this,\'normal\')">A</button>' +
-      '<button type="button" class="hed-fontsize" title="글자 크게" onclick="hedFontSize(this,\'large\')" style="font-size:0.9rem!important">A</button>' +
-      '<button type="button" class="hed-fontsize" title="글자 매우 크게" onclick="hedFontSize(this,\'xlarge\')" style="font-size:1.05rem!important">A</button>' +
+      '<button type="button" class="hed-fontsize" title="글자 크게" onclick="hedFontSize(this,\'large\')" style="font-size:0.95rem!important">A</button>' +
+      '<button type="button" class="hed-fontsize" title="글자 매우 크게" onclick="hedFontSize(this,\'xlarge\')" style="font-size:1.1rem!important">A</button>' +
       '<span class="hed-sep"></span>' +
       '<button type="button" title="제목1" onclick="hedBlock(this,\'h3\')">H1</button>' +
       '<button type="button" title="제목2" onclick="hedBlock(this,\'h4\')">H2</button>' +
       '<button type="button" title="본문" onclick="hedBlock(this,\'p\')">¶</button>' +
       '<span class="hed-sep"></span>' +
-      '<button type="button" title="좌측 정렬" onclick="hedCmd(this,\'justifyLeft\')">≡</button>' +
-      '<button type="button" title="가운데 정렬" onclick="hedCmd(this,\'justifyCenter\')">≡</button>' +
-      '<button type="button" title="우측 정렬" onclick="hedCmd(this,\'justifyRight\')">≡</button>' +
+      '<button type="button" title="좌측 정렬" onclick="hedCmd(this,\'justifyLeft\')">◧</button>' +
+      '<button type="button" title="가운데 정렬" onclick="hedCmd(this,\'justifyCenter\')">◫</button>' +
+      '<button type="button" title="우측 정렬" onclick="hedCmd(this,\'justifyRight\')">◨</button>' +
       '<span class="hed-sep"></span>' +
       '<button type="button" title="글머리 목록" onclick="hedCmd(this,\'insertUnorderedList\')">•</button>' +
       '<button type="button" title="번호 목록" onclick="hedCmd(this,\'insertOrderedList\')">1.</button>' +
       '<span class="hed-sep"></span>' +
+      '<button type="button" title="표 삽입" onclick="hedTable(this)">⊞</button>' +
+      '<span class="hed-sep"></span>' +
       '<button type="button" title="링크 삽입" onclick="hedLink(this)">🔗</button>' +
       '<button type="button" title="이미지 삽입" onclick="hedImage(this)">🖼</button>' +
       '<span class="hed-sep"></span>' +
-      '<button type="button" title="글자색" onclick="hedColor(this)">A</button>' +
-      '<button type="button" title="형광펜" onclick="hedHighlight(this)">✏</button>' +
+      '<button type="button" title="글자색" onclick="hedColor(this)" style="color:#c00;font-weight:900;">A</button>' +
+      '<button type="button" title="형광펜" onclick="hedHighlight(this)" style="background:#fff3cd;">✏</button>' +
       '<span class="hed-sep"></span>' +
       '<button type="button" title="구분선" onclick="hedCmd(this,\'insertHorizontalRule\')">—</button>' +
       '<button type="button" title="취소선" onclick="hedCmd(this,\'strikeThrough\')"><s>S</s></button>' +
@@ -9693,6 +9708,32 @@ try {
     wrap.appendChild(toolbar.firstChild);
     wrap.appendChild(editor);
     wrap.appendChild(ta);
+  }
+
+  function hedTable(btn) {
+    var rows = parseInt(prompt('행 수를 입력하세요 (예: 3):', '3'));
+    var cols = parseInt(prompt('열 수를 입력하세요 (예: 3):', '3'));
+    if (!rows || !cols || rows < 1 || cols < 1) return;
+
+    var html = '<table style="border-collapse:collapse;width:100%;margin:1rem 0;">';
+    // 헤더 행
+    html += '<tr>';
+    for (var c = 0; c < cols; c++) {
+      html += '<th style="border:1px solid #ccc;padding:0.5rem 0.8rem;background:#f0ebe0;font-weight:600;color:#0d1f3c;">열 ' + (c+1) + '</th>';
+    }
+    html += '</tr>';
+    // 데이터 행
+    for (var r = 1; r < rows; r++) {
+      html += '<tr>';
+      for (var c2 = 0; c2 < cols; c2++) {
+        html += '<td style="border:1px solid #ccc;padding:0.5rem 0.8rem;min-width:60px;">&nbsp;</td>';
+      }
+      html += '</tr>';
+    }
+    html += '</table><p><br></p>';
+
+    hedGetEditor(btn).focus();
+    document.execCommand('insertHTML', false, html);
   }
 
   function hedFontSize(btn, size) {
