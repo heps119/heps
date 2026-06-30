@@ -11157,6 +11157,7 @@ ${message || '(작성 없음)'}
 
   // 추가 폼 토글
   function toggleFaqAddForm() {
+    if (!isAdmin) { openAdminModal(); return; }
     document.getElementById('faqAddForm').classList.toggle('open');
     document.getElementById('newFaqQ').focus();
   }
@@ -12358,6 +12359,7 @@ ${message || '(작성 없음)'}
   // ════════════════════════════════════════════
 
   function openContactListModal() {
+    if (!isAdmin) { openAdminModal(); return; }
     document.getElementById('contactListBg').style.display = 'flex';
     document.getElementById('contactListBody').innerHTML = '<p style="color:#999; text-align:center; padding:2rem;">불러오는 중...</p>';
 
@@ -12427,6 +12429,7 @@ ${message || '(작성 없음)'}
   // ════════════════════════════════════════════
 
   function openPopupManageModal() {
+    if (!isAdmin) { openAdminModal(); return; }
     document.getElementById('popupManageBg').style.display = 'flex';
     loadPopupList();
   }
