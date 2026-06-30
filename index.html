@@ -10718,27 +10718,6 @@ ${message || '(작성 없음)'}
     }
   }
 
-  // Supabase에서 FAQ 로드
-  function loadFaqItems() {
-    if (!window._sb) return;
-    window._sb.getAll('faq_items').then(function(rows) {
-      var wrap = document.getElementById('faqWrap');
-      if (!wrap) return;
-      wrap.innerHTML = ''; // 새로고침 시 중복 방지 (수정/추가 후 재호출 대응)
-      if (!rows || !rows.length) return;
-
-      // 카테고리 표시 순서 고정, 그 외 카테고리는 뒤에 알파벳/등록순으로
-      var catOrder = ['기본개념', '설계·구조', '세금', '자산보호', '비용·절차'];
-      function catRank(c) {
-        var idx = catOrder.indexOf(c);
-        return idx === -1 ? 999 : idx;
-      }
-      rows.sort(function(a, b) {
-        var rc = catRank(a.cat) - catRank(b.cat);
-        if (rc !== 0) return rc;
-        return (a.id || 0) - (b.id || 0);
-      });
-
   // 답변 값이 이미 HTML(리치 에디터로 작성됨)인지, 옛날 방식 평문인지 판별
   function faqAnswerIsHtml(s) {
     return /<[a-z][\s\S]*>/i.test(s || '');
@@ -10752,6 +10731,7 @@ ${message || '(작성 없음)'}
     }).join('');
   }
 
+  // Supabase에서 FAQ 로드
   function loadFaqItems() {
     if (!window._sb) return;
     window._sb.getAll('faq_items').then(function(rows) {
