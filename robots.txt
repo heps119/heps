@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# 네이버 봇 명시적 허용
+User-agent: Yeti
+Allow: /
+
+Sitemap: https://heps119.com/sitemap.xml
