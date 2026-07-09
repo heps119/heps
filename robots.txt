@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Sitemap: https://heps119.com/sitemap.xml
+
+# 주요 크롤러 명시 허용
+User-agent: Googlebot
+Allow: /
+
+User-agent: Yeti
+Allow: /
