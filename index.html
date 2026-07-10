@@ -6023,7 +6023,22 @@
           <span>증여자(조부모)의 자녀(중간세대)가 이미 사망하여 손자녀가 최근친 직계비속으로 증여받는 경우 — 할증 면제</span>
         </label>
       </div>
-
+<div id="g_marriage_box" class="g-skip-box" style="display:none;">
+        <div class="g-skip-title" style="color:var(--gold);">💍 혼인·출산 증여재산공제 (상증법 제53조의2)</div>
+        <label class="diag-chip" id="g_marriage_chip" style="margin-bottom:0.6rem;cursor:pointer;">
+          <input type="checkbox" id="g_marriage_apply" onchange="cdToggleCheck(this); calcGiftTax();">
+          <span>혼인신고일 전후 2년 이내 또는 자녀 출생·입양 후 2년 이내 증여 — 기존 증여재산공제와 별도로 추가공제 적용</span>
+        </label>
+        <div class="calc-field calc-input-field" id="g_marriage_amt_wrap">
+          <label>적용할 추가공제 금액</label>
+          <p class="hint">평생 통합 한도 1억원(혼인+출산 합산) 중 이번에 적용할 금액. 이미 일부 사용했다면 남은 금액만 입력하세요.</p>
+          <div class="calc-input-wrap">
+            <input type="text" id="g_marriage_amt" inputmode="numeric" value="100,000">
+            <span class="unit">천원</span>
+          </div>
+        </div>
+      </div>
+      
       <!-- 결과 -->
       <div class="calc-step-title" style="margin-top:2rem;">계산 결과</div>
 
