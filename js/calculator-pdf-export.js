@@ -91,6 +91,28 @@
     }
   }
 
+  // 공통 경고 배너 — "신고용 부적합" 안내 (헤더 바로 아래, 표 시작 전)
+  function drawWarningBox(doc, y) {
+    var pageWidth = doc.internal.pageSize.getWidth();
+    var boxWidth = pageWidth - 80;
+    var text = '⚠ 이 결과는 제한된 정보에 의한 추정 결과이므로, 이 자료를 신고용으로는 적합하지 않습니다. 보다 상세한 내용에 대해서는 현곡상속신탁설계연구소 또는 전문가와 상담하시기 바랍니다.';
+
+    doc.setFont('NotoSansKR', 'normal');
+    doc.setFontSize(9.5);
+    var lines = doc.splitTextToSize(text, boxWidth - 24);
+    var boxHeight = lines.length * 13.5 + 16;
+
+    doc.setFillColor(255, 244, 229);
+    doc.setDrawColor(217, 119, 6);
+    doc.setLineWidth(1);
+    doc.roundedRect(40, y, boxWidth, boxHeight, 3, 3, 'FD');
+
+    doc.setTextColor(122, 74, 0);
+    doc.text(lines, 52, y + 17);
+
+    return y + boxHeight + 18;
+  }
+
   function baseTableOptions(startY) {
     return {
       startY: startY,
@@ -201,16 +223,23 @@
     if (!registerKoreanFont(doc)) { alert('PDF 폰트를 불러오지 못했습니다.'); return; }
 
     var y = drawHeader(doc, '증여세 간이 계산 결과');
+    y = drawWarningBox(doc, y);
+
+    var giftInputBody = [
+      ['신규 증여재산가액', (val('g_new') || '0') + ' 천원'],
+      ['차감할 부채', (val('g_debt') || '0') + ' 천원'],
+      ['10년 이내 동일인 기존 증여가액', (val('g_prior') || '0') + ' 천원'],
+      ['기존 증여 산출세액(기납부세액)', (val('g_priortax') || '0') + ' 천원'],
+      ['수증자 구분', selectedLabel('g_relation')],
+    ];
+    var marriageChk = document.getElementById('g_marriage_apply');
+    if (marriageChk && marriageChk.checked) {
+      giftInputBody.push(['혼인·출산 증여재산공제', '적용 (' + (val('g_marriage_amt') || '0') + ' 천원)']);
+    }
 
     doc.autoTable(Object.assign(baseTableOptions(y), {
       head: [['입력 항목', '내용']],
-      body: [
-        ['신규 증여재산가액', (val('g_new') || '0') + ' 천원'],
-        ['차감할 부채', (val('g_debt') || '0') + ' 천원'],
-        ['10년 이내 동일인 기존 증여가액', (val('g_prior') || '0') + ' 천원'],
-        ['기존 증여 산출세액(기납부세액)', (val('g_priortax') || '0') + ' 천원'],
-        ['수증자 구분', selectedLabel('g_relation')],
-      ],
+      body: giftInputBody,
       columnStyles: { 0: { cellWidth: 220 } },
     }));
 
@@ -279,6 +308,7 @@
     if (!registerKoreanFont(doc)) { alert('PDF 폰트를 불러오지 못했습니다.'); return; }
 
     var y = drawHeader(doc, '상속세 간이 계산 결과');
+    y = drawWarningBox(doc, y);
 
     doc.autoTable(Object.assign(baseTableOptions(y), {
       head: [['입력 항목', '내용']],
@@ -360,6 +390,7 @@
     if (!registerKoreanFont(doc)) { alert('PDF 폰트를 불러오지 못했습니다.'); return; }
 
     var y = drawHeader(doc, '롤링윈도우 연속증여세 계산 결과');
+    y = drawWarningBox(doc, y);
 
     var rows = [];
     Array.prototype.forEach.call(tbody.children, function (tr, idx) {
