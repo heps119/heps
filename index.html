@@ -15,7 +15,8 @@
   <meta property="og:url" content="https://heps119.com">
   <meta property="og:site_name" content="현곡상속신탁설계연구소">
   <meta property="og:locale" content="ko_KR">
-  <link rel="canonical" href="https://heps119.com">
+  <link rel="canonical" href="https://
+    heps119.com">
 
   <!-- Schema.org 구조화 데이터 -->
   <script type="application/ld+json">
@@ -12303,7 +12304,17 @@ window.userPosts = [];
     var isSkip = (relation === 6 || relation === 7);
     var skipBox = document.getElementById('g_skip_options');
     if (skipBox) skipBox.style.display = isSkip ? 'block' : 'none';
-    var parentDead = isSkip && document.getElementById('g_parent_dead') ? document.getElementById('g_parent_dead').checked : false;
+    var parentDead = isSkip && document.getElementById('g_parent_dead') ? document.getElementById('g_parent_dead').checked : false;// 혼인·출산 증여재산공제 UI 토글 (성년 자녀에게만 노출 — 상증법 제53조의2)
+    var showMarriage = (relation === 2);
+    var marriageBox = document.getElementById('g_marriage_box');
+    if (marriageBox) marriageBox.style.display = showMarriage ? 'block' : 'none';
+    var marriageApply = showMarriage && document.getElementById('g_marriage_apply') ? document.getElementById('g_marriage_apply').checked : false;
+    var marriageAmt = 0;
+    if (marriageApply) {
+      marriageAmt = parseNum(document.getElementById('g_marriage_amt').value);
+      if (marriageAmt > 100000) marriageAmt = 100000; // 평생 통합 한도 1억원(=100,000천원)
+      if (marriageAmt < 0) marriageAmt = 0;
+    }
 
     // ── 1단계: 증여세 과세가액 (C6 = C7+C8-C9) ──
     var taxBase0 = newGift + priorGift - debt;
