@@ -1,7 +1,8 @@
 /*
- * heps119.com — 증여세·상속세 계산기 결과 PDF 출력 기능
+ * heps119.com — 증여세·상속세·롤링윈도우 계산기 결과 PDF 출력 기능
  * jsPDF + jsPDF-AutoTable 기반, 100% 클라이언트(브라우저) 내부에서만 동작합니다.
- * 입력/계산 데이터는 서버로 전송되지 않으며, PDF도 사용자의 브라우저에서 직접 생성·다운로드됩니다.
+ * 입력/계산 데이터는 서버로 전송되지 않으며, PDF도 사용자의 브라우저에서 직접 생성됩니다.
+ * PDF 생성과 동시에 화면에 미리보기 창이 열리고, 필요하면 다운로드할 수 있습니다.
  * 페이지를 떠나면 모든 데이터는 메모리에서 사라집니다 (별도 저장 로직 없음).
  */
 
@@ -115,7 +116,78 @@
   }
 
   // ───────────────────────────────────────────
-  // 증여세 계산기 PDF 출력
+  // PDF 미리보기 모달 — 생성과 동시에 화면에 출력
+  // ───────────────────────────────────────────
+  function openPdfPreviewModal(doc, filename) {
+    var blobUrl = doc.output('bloburl');
+
+    var existing = document.getElementById('hepsPdfModalOverlay');
+    if (existing) existing.remove();
+
+    var overlay = document.createElement('div');
+    overlay.id = 'hepsPdfModalOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,15,25,0.72);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
+
+    var box = document.createElement('div');
+    box.style.cssText = 'background:#fff;border-radius:10px;width:100%;max-width:920px;height:92vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.4);';
+
+    var bar = document.createElement('div');
+    bar.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;background:#1e2a3a;color:#fff;font-family:"Noto Sans KR",sans-serif;flex-wrap:wrap;';
+
+    var titleSpan = document.createElement('span');
+    titleSpan.textContent = '📄 ' + filename;
+    titleSpan.style.cssText = 'font-size:0.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:340px;';
+
+    var btnWrap = document.createElement('div');
+    btnWrap.style.cssText = 'display:flex;gap:8px;flex-shrink:0;';
+
+    function mkBtn(label, primary) {
+      var b = document.createElement('button');
+      b.textContent = label;
+      b.type = 'button';
+      b.style.cssText = 'border:none;padding:7px 14px;border-radius:5px;cursor:pointer;font-size:0.8rem;font-family:"Noto Sans KR",sans-serif;font-weight:700;' +
+        (primary ? 'background:#c9a84c;color:#1e2a3a;' : 'background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.35);');
+      return b;
+    }
+
+    var downloadBtn = mkBtn('⬇ 다운로드', true);
+    downloadBtn.onclick = function () { doc.save(filename); };
+
+    var newTabBtn = mkBtn('↗ 새 탭에서 열기', false);
+    newTabBtn.onclick = function () { window.open(blobUrl, '_blank'); };
+
+    var closeBtn = mkBtn('✕ 닫기', false);
+    closeBtn.onclick = closeModal;
+
+    btnWrap.appendChild(downloadBtn);
+    btnWrap.appendChild(newTabBtn);
+    btnWrap.appendChild(closeBtn);
+    bar.appendChild(titleSpan);
+    bar.appendChild(btnWrap);
+
+    var iframe = document.createElement('iframe');
+    iframe.src = blobUrl;
+    iframe.style.cssText = 'flex:1;border:none;width:100%;background:#525659;';
+
+    box.appendChild(bar);
+    box.appendChild(iframe);
+    overlay.appendChild(box);
+
+    function closeModal() {
+      overlay.remove();
+      document.removeEventListener('keydown', escHandler);
+      URL.revokeObjectURL(blobUrl);
+    }
+    function escHandler(e) { if (e.key === 'Escape') closeModal(); }
+
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
+    document.addEventListener('keydown', escHandler);
+
+    document.body.appendChild(overlay);
+  }
+
+  // ───────────────────────────────────────────
+  // 증여세 계산기 PDF 출력 + 화면 미리보기
   // ───────────────────────────────────────────
   window.exportGiftTaxPDF = function () {
     if (typeof calcGiftTax === 'function') calcGiftTax(); // 최신값으로 재계산
@@ -130,7 +202,6 @@
 
     var y = drawHeader(doc, '증여세 간이 계산 결과');
 
-    // ── 입력값 요약 ──
     doc.autoTable(Object.assign(baseTableOptions(y), {
       head: [['입력 항목', '내용']],
       body: [
@@ -184,11 +255,11 @@
 
     drawFooter(doc, '※ 본 결과는 엑셀 증여세 계산 로직(2025년 기준)에 세대생략 할증과세(상증법 제57조)를 추가 반영한 간이 추정치입니다. 창업자금·가업승계 특례 등은 포함되지 않았습니다. 정확한 납부세액은 현곡상속신탁설계연구소에 상담 신청해 주십시오.');
 
-    doc.save('증여세_계산결과_' + todayFileStamp() + '.pdf');
+    openPdfPreviewModal(doc, '증여세_계산결과_' + todayFileStamp() + '.pdf');
   };
 
   // ───────────────────────────────────────────
-  // 상속세 계산기 PDF 출력
+  // 상속세 계산기 PDF 출력 + 화면 미리보기
   // ───────────────────────────────────────────
   window.exportInheritanceTaxPDF = function () {
     if (typeof calcInheritance === 'function') calcInheritance(); // 최신값으로 재계산
@@ -209,7 +280,6 @@
 
     var y = drawHeader(doc, '상속세 간이 계산 결과');
 
-    // ── 입력값 요약 ──
     doc.autoTable(Object.assign(baseTableOptions(y), {
       head: [['입력 항목', '내용']],
       body: [
@@ -266,7 +336,84 @@
 
     drawFooter(doc, '※ 본 결과는 엑셀 상속세 계산 로직(2025년 기준)을 적용한 간이 추정치입니다. 동거주택 공제·영농상속공제·세대생략할증 등은 포함되지 않았습니다. 정확한 납부세액은 현곡상속신탁설계연구소에 상담 신청해 주십시오.');
 
-    doc.save('상속세_계산결과_' + todayFileStamp() + '.pdf');
+    openPdfPreviewModal(doc, '상속세_계산결과_' + todayFileStamp() + '.pdf');
+  };
+
+  // ───────────────────────────────────────────
+  // 롤링윈도우 연속증여세 시뮬레이터 PDF 출력 + 화면 미리보기
+  // ───────────────────────────────────────────
+  window.exportRollingWindowPDF = function () {
+    if (typeof rwCalcAll === 'function') rwCalcAll(); // 최신값으로 재계산
+
+    var tbody = document.getElementById('rwTableBody');
+    if (!tbody || tbody.children.length === 0) {
+      alert('먼저 증여 내역을 1건 이상 입력해 주세요.');
+      return;
+    }
+
+    if (typeof window.jspdf === 'undefined') {
+      alert('PDF 라이브러리를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
+      return;
+    }
+
+    var doc = new window.jspdf.jsPDF({ unit: 'pt', format: 'a4', orientation: 'landscape' });
+    if (!registerKoreanFont(doc)) { alert('PDF 폰트를 불러오지 못했습니다.'); return; }
+
+    var y = drawHeader(doc, '롤링윈도우 연속증여세 계산 결과');
+
+    var rows = [];
+    Array.prototype.forEach.call(tbody.children, function (tr, idx) {
+      var dateInput = tr.querySelector('input[type="text"]');
+      var select = tr.querySelector('select');
+      var amtInput = tr.querySelector('input[id^="rw_amt_"]');
+      var fCell = tr.querySelector('td[id^="rw_f_"]');
+      var cCell = tr.querySelector('td[id^="rw_c_"]');
+      var bCell = tr.querySelector('td[id^="rw_b_"]');
+      var tCell = tr.querySelector('td[id^="rw_t_"]');
+
+      if (!dateInput || !dateInput.value) return; // 빈 행 제외
+
+      rows.push([
+        String(idx + 1),
+        dateInput.value,
+        select ? select.options[select.selectedIndex].textContent : '',
+        amtInput && amtInput.value ? amtInput.value + ' 원' : '0 원',
+        fCell ? fCell.textContent : '—',
+        cCell ? cCell.textContent : '—',
+        bCell ? bCell.textContent : '—',
+        tCell ? tCell.textContent : '—',
+      ]);
+    });
+
+    if (rows.length === 0) {
+      alert('증여일이 입력된 행이 없습니다. 날짜를 입력한 뒤 다시 시도해 주세요.');
+      return;
+    }
+
+    var tableOpts = baseTableOptions(y);
+    tableOpts.head = [['#', '증여일', '수증자', '증여액', '최근10년 누계', '당해 공제', '과세표준', '증여세']];
+    tableOpts.body = rows;
+    tableOpts.styles = Object.assign({}, tableOpts.styles, { fontSize: 8.5 });
+    tableOpts.columnStyles = {
+      0: { cellWidth: 26, halign: 'center' },
+      3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' }, 6: { halign: 'right' }, 7: { halign: 'right' },
+    };
+    doc.autoTable(tableOpts);
+
+    var totalText = txt('rwTotalTax') || '0원';
+    var y3 = doc.lastAutoTable.finalY + 6;
+    doc.autoTable({
+      startY: y3,
+      theme: 'plain',
+      body: [['합계 납부 증여세 (추정)', totalText]],
+      styles: { font: 'NotoSansKR', fontStyle: 'bold', fontSize: 13, textColor: [150, 30, 30], cellPadding: 8 },
+      columnStyles: { 0: { cellWidth: 300 }, 1: { halign: 'right' } },
+      margin: { left: 40, right: 40 },
+    });
+
+    drawFooter(doc, '※ 본 결과는 10년 롤링윈도우 기준 간이 추정치입니다. 신고세액공제(3%)·가산세·지방세(10%) 및 세대생략할증 일부 항목은 반영되지 않을 수 있습니다. 부모 양측 증여 시 별도 합산이 필요합니다. 정확한 세액은 현곡상속신탁설계연구소에 상담 신청해 주십시오.');
+
+    openPdfPreviewModal(doc, '롤링윈도우_증여세_계산결과_' + todayFileStamp() + '.pdf');
   };
 
 })();
