@@ -12168,7 +12168,7 @@ window.userPosts = [];
     'c_gift','c_disposed','c_explained','c_estimated',
     'c_funeral','c_deposit','c_debt',
     'c_spouse_amount','c_financial','c_paid_tax','c_business',
-    'g_new','g_debt','g_prior','g_priortax'
+    'g_new','g_debt','g_prior','g_priortax','g_marriage_amt'
   ];
   // 부동산 필드 (천원 단위, 콤마 + calcRealEstate 연동)
   var RE_NUM_IDS = ['c_land','c_building_std','c_rent_deposit','c_rent_annual'];
@@ -12232,7 +12232,7 @@ window.userPosts = [];
       if (id === 'c_financial_asset' || id === 'c_other_asset') {
         calcTotalAsset();
       }
-      if (id === 'g_new' || id === 'g_debt' || id === 'g_prior' || id === 'g_priortax') {
+if (id === 'g_new' || id === 'g_debt' || id === 'g_prior' || id === 'g_priortax' || id === 'g_marriage_amt') {
         calcGiftTax();
       }
     });
@@ -12330,7 +12330,7 @@ window.userPosts = [];
     else if (relation === 5) deduct = 50000;
     else if (relation === 4) deduct = 10000;
     else deduct = 0;
-
+deduct += marriageAmt; // (+) 혼인·출산 증여재산공제 — 기존 공제와 별도 가산
     var taxBase = Math.max(0, taxBase0 - deduct); // C15 과세표준
 
     // ── 3단계: 세율 적용 (엑셀 누진세율표, 천원 단위 구간) ──
@@ -12378,7 +12378,7 @@ window.userPosts = [];
     setText('g-r-prior', '+ ' + numFmt(priorGift) + ' 천원');
     setText('g-r-debt', '− ' + numFmt(debt) + ' 천원');
     setText('g-r-taxbase0', numFmt(taxBase0) + ' 천원');
-    setText('g-r-deduct', '− ' + numFmt(deduct) + ' 천원');
+    setText('g-r-deduct', '− ' + numFmt(deduct) + ' 천원' + (marriageAmt > 0 ? ' (기본 ' + numFmt(deduct - marriageAmt) + ' + 혼인출산 ' + numFmt(marriageAmt) + ')' : ''));
     setText('g-r-base', numFmt(taxBase) + ' 천원');
     setText('g-r-rate', rateLabel);
     setText('g-r-calculated', numFmt(calculated) + ' 천원');
