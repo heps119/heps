@@ -5974,6 +5974,15 @@
         <label style="display:flex; align-items:center; gap:0.4rem; font-size:0.78rem; color:rgba(255,255,255,0.9); margin-bottom:0.6rem; cursor:pointer;">
           <input type="checkbox" id="noticeShowAsPopup"> 팝업으로도 노출 (방문자에게 팝업창으로 표시)
         </label>
+        <!-- 첨부파일 — 방문자가 다운로드할 수 있는 파일(PDF·문서 등)을 공지에 붙인다.
+             Supabase Storage의 notice-attachments 버킷(공개 버킷)에 업로드하고,
+             notices 테이블에는 URL과 원본 파일명만 저장한다. -->
+        <div style="margin-bottom:0.6rem;">
+          <label style="display:block; font-size:0.78rem; color:rgba(255,255,255,0.9); margin-bottom:0.35rem;">📎 첨부파일 (선택)</label>
+          <input type="file" id="noticeFileInput" onchange="handleNoticeFileSelect(this)"
+            style="width:100%; background:#0a1628; border:1px solid rgba(255,255,255,0.12); color:white; padding:0.4rem 0.6rem; font-size:0.78rem; font-family:'Noto Sans KR',sans-serif; box-sizing:border-box; border-radius:2px;">
+          <div id="noticeFileStatus" style="font-size:0.74rem; color:rgba(255,255,255,0.75); margin-top:0.3rem;"></div>
+        </div>
         <div style="display:flex; gap:0.4rem; justify-content:flex-end;">
           <button onclick="closeNoticeForm()" style="background:none; border:1px solid rgba(255,255,255,0.2); color:rgba(255,255,255,0.9); padding:4px 12px; font-size:0.78rem; cursor:pointer; font-family:'Noto Sans KR',sans-serif; border-radius:2px;">취소</button>
           <button id="noticeSubmitBtn" onclick="submitNotice()" style="background:var(--gold); color:var(--navy); border:none; padding:4px 14px; font-size:0.78rem; font-weight:700; cursor:pointer; font-family:'Noto Sans KR',sans-serif; border-radius:2px;">등록</button>
@@ -14183,6 +14192,59 @@ window.userPosts = [];
   }
 
   // ── 공지사항 ──
+  // ── 공지사항 첨부파일 (Supabase Storage) ──────────────────────────
+  // 버킷: notice-attachments (공개 읽기, 관리자만 업로드/삭제).
+  // 파일 자체는 Storage에, notices 테이블에는 URL·원본명만 저장한다.
+  var NOTICE_BUCKET = 'notice-attachments';
+  var _noticePendingFile = null; // 선택했지만 아직 업로드 전인 파일
+
+  window.handleNoticeFileSelect = function(input) {
+    var f = input.files && input.files[0];
+    var statusEl = document.getElementById('noticeFileStatus');
+    if (!f) { _noticePendingFile = null; if (statusEl) statusEl.textContent = ''; return; }
+    if (f.size > 20 * 1024 * 1024) { // 20MB 제한 — Storage 요금·업로드 시간 감안한 상한
+      alert('첨부파일은 20MB 이하만 가능합니다.');
+      input.value = '';
+      _noticePendingFile = null;
+      return;
+    }
+    _noticePendingFile = f;
+    if (statusEl) statusEl.textContent = '선택됨: ' + f.name + ' (' + (f.size / 1024 / 1024).toFixed(1) + 'MB) — 등록 시 업로드됩니다.';
+  };
+
+  // 파일을 Storage에 올리고 { url, name } 을 돌려준다. 선택된 파일이 없으면 null.
+  function uploadNoticeAttachment(file) {
+    if (!file) return Promise.resolve(null);
+    var token = (window._adminSession && window._adminSession.access_token) || '';
+    if (!token) return Promise.reject(new Error('로그인이 필요합니다.'));
+    // 한글 파일명은 그대로 저장하되, 경로 충돌 방지를 위해 시각 접두어를 붙인다.
+    var safeExt = (file.name.split('.').pop() || 'bin').replace(/[^a-zA-Z0-9]/g, '');
+    var path = Date.now() + '_' + Math.random().toString(36).slice(2, 8) + '.' + safeExt;
+    var uploadUrl = 'https://rqcbqtguwpdodsiazgtn.supabase.co/storage/v1/object/' + NOTICE_BUCKET + '/' + path;
+    return fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJxY2JxdGd1d3Bkb2RzaWF6Z3RuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTI5MjgsImV4cCI6MjA5Nzk4ODkyOH0.FG0sXd8WzpuZWyI2IMtZK8x3Jfm3B-WEb75dZxHl0sg',
+        'Content-Type': file.type || 'application/octet-stream',
+        'x-upsert': 'false'
+      },
+      body: file
+    }).then(function(res) {
+      if (!res.ok) return res.text().then(function(t) { throw new Error('업로드 실패: ' + t); });
+      var publicUrl = 'https://rqcbqtguwpdodsiazgtn.supabase.co/storage/v1/object/public/' + NOTICE_BUCKET + '/' + path;
+      return { url: publicUrl, name: file.name };
+    });
+  }
+
+  window.deleteNoticeAttachment = function(id) {
+    if (!confirm('첨부파일만 삭제하시겠습니까? 공지 자체는 남습니다.')) return;
+    adminApi('adminUpdate', { table: 'notices', id: id, fields: { attachment_url: null, attachment_name: null } })
+      .then(function() { loadNotices(); })
+      .catch(function(e) { alert('삭제 실패: ' + e.message); });
+  };
+  // ───────────────────────────────────────────────────────────────
+
   function loadNotices() {
     if (!window._sb) return;
     var list = document.getElementById('noticeList');
@@ -14204,6 +14266,11 @@ window.userPosts = [];
                 n.title +
               '</div>' +
               '<div style="font-size:0.75rem; color:rgba(255,255,255,0.9); line-height:1.6;">' + n.content + '</div>' +
+              (n.attachment_url
+                ? '<a href="' + n.attachment_url + '" target="_blank" rel="noopener" onclick="event.stopPropagation();" ' +
+                  'style="display:inline-flex;align-items:center;gap:0.3rem;margin-top:0.4rem;font-size:0.73rem;color:var(--gold2);text-decoration:none;border:1px solid rgba(201,168,76,0.35);border-radius:2px;padding:2px 8px;">' +
+                  '📎 ' + (n.attachment_name || '첨부파일') + ' 다운로드</a>'
+                : '') +
               '<div style="font-size:0.7rem; color:rgba(255,255,255,0.9); margin-top:0.3rem;">' + (n.created_at || '').slice(0, 10) + ' · 조회 ' + (n.views || 0).toLocaleString() + '</div>' +
             '</div>' +
             (isAdmin ? '<div style="display:flex; gap:0.3rem; flex-shrink:0;"><button onclick="event.stopPropagation(); openNoticeForm(' + n.id + ')" style="background:none;border:none;color:rgba(201,168,76,0.7);cursor:pointer;font-size:0.75rem;padding:0 4px;">✏️</button><button onclick="event.stopPropagation(); deleteNotice(' + n.id + ')" style="background:none;border:none;color:rgba(255,100,100,0.5);cursor:pointer;font-size:0.8rem;padding:0 4px;">✕</button></div>' : '') +
@@ -14221,7 +14288,12 @@ window.userPosts = [];
     document.getElementById('detailViewTitle').textContent = n.title;
     var curViews = n.views || 0;
     document.getElementById('detailViewMeta').textContent = (n.created_at || '').slice(0, 10) + ' · 조회 ' + (curViews + 1).toLocaleString();
-    document.getElementById('detailViewBody').innerHTML = (n.content || '').replace(/\n/g, '<br>');
+    document.getElementById('detailViewBody').innerHTML = (n.content || '').replace(/\n/g, '<br>') +
+      (n.attachment_url
+        ? '<div style="margin-top:1.2rem;"><a href="' + n.attachment_url + '" target="_blank" rel="noopener" ' +
+          'style="display:inline-flex;align-items:center;gap:0.4rem;font-size:0.85rem;color:var(--navy);text-decoration:none;border:1px solid var(--gold);border-radius:3px;padding:0.5rem 0.9rem;background:rgba(201,168,76,0.08);">' +
+          '📎 ' + (n.attachment_name || '첨부파일') + ' 다운로드</a></div>'
+        : '');
     document.getElementById('detailViewBg').style.display = 'flex';
     n.views = bumpViews('notices', id, curViews);
   };
@@ -14240,12 +14312,18 @@ window.userPosts = [];
       titleEl.value = n.title || '';
       contentEl.value = n.content || '';
       popupEl.checked = !!n.show_as_popup;
+      var fs = document.getElementById('noticeFileStatus');
+      if (fs) fs.textContent = n.attachment_url ? ('현재 첨부: ' + (n.attachment_name || '파일') + ' (새 파일을 선택하면 교체됩니다)') : '';
+      _noticePendingFile = null;
       if (submitBtn) submitBtn.textContent = '수정 저장';
     } else {
       window._editingNoticeId = null;
       titleEl.value = '';
       contentEl.value = '';
       popupEl.checked = false;
+      _noticePendingFile = null;
+      var fs2 = document.getElementById('noticeFileStatus');
+      if (fs2) fs2.textContent = '';
       if (submitBtn) submitBtn.textContent = '등록';
     }
     document.getElementById('noticeForm').style.display = '';
@@ -14257,6 +14335,11 @@ window.userPosts = [];
     document.getElementById('noticeTitle').value = '';
     document.getElementById('noticeContent').value = '';
     document.getElementById('noticeShowAsPopup').checked = false;
+    var fileEl = document.getElementById('noticeFileInput');
+    if (fileEl) fileEl.value = '';
+    var fs = document.getElementById('noticeFileStatus');
+    if (fs) fs.textContent = '';
+    _noticePendingFile = null;
     var submitBtn = document.getElementById('noticeSubmitBtn');
     if (submitBtn) submitBtn.textContent = '등록';
   };
@@ -14284,27 +14367,41 @@ window.userPosts = [];
     var showAsPopup = document.getElementById('noticeShowAsPopup').checked;
     if (!title) { alert('공지 제목을 입력해 주세요.'); return; }
 
-    if (window._editingNoticeId) {
-      var editingNotice = (window._noticesCache || []).find(function(x) { return x.id === window._editingNoticeId; }) || {};
-      syncNoticePopup(editingNotice, showAsPopup, title, content).then(function(popupId) {
-        return adminApi('adminUpdate', { table: 'notices', id: window._editingNoticeId, fields: { title: title, content: content, show_as_popup: showAsPopup, popup_id: popupId } });
-      }).then(function() {
-        closeNoticeForm();
-        loadNotices();
-      }).catch(function(e) { alert('수정 실패: ' + e.message); });
-    } else {
-      adminApi('adminInsert', { table: 'notices', fields: { title: title, content: content, show_as_popup: false } }).then(function(resp) {
-        var newNotice = resp.data && resp.data[0] ? resp.data[0] : null;
-        if (!newNotice) { closeNoticeForm(); loadNotices(); return; }
-        return syncNoticePopup(newNotice, showAsPopup, title, content).then(function(popupId) {
-          if (!showAsPopup && !popupId) { closeNoticeForm(); loadNotices(); return; }
-          return adminApi('adminUpdate', { table: 'notices', id: newNotice.id, fields: { show_as_popup: showAsPopup, popup_id: popupId } }).then(function() {
-            closeNoticeForm();
-            loadNotices();
+    var submitBtn = document.getElementById('noticeSubmitBtn');
+    var fileToUpload = _noticePendingFile;
+    if (submitBtn && fileToUpload) submitBtn.textContent = '업로드 중...';
+
+    uploadNoticeAttachment(fileToUpload).then(function(uploaded) {
+      var attachFields = uploaded ? { attachment_url: uploaded.url, attachment_name: uploaded.name } : {};
+
+      if (window._editingNoticeId) {
+        var editingNotice = (window._noticesCache || []).find(function(x) { return x.id === window._editingNoticeId; }) || {};
+        return syncNoticePopup(editingNotice, showAsPopup, title, content).then(function(popupId) {
+          return adminApi('adminUpdate', {
+            table: 'notices', id: window._editingNoticeId,
+            fields: Object.assign({ title: title, content: content, show_as_popup: showAsPopup, popup_id: popupId }, attachFields)
+          });
+        }).then(function() {
+          closeNoticeForm();
+          loadNotices();
+        });
+      } else {
+        return adminApi('adminInsert', { table: 'notices', fields: Object.assign({ title: title, content: content, show_as_popup: false }, attachFields) }).then(function(resp) {
+          var newNotice = resp.data && resp.data[0] ? resp.data[0] : null;
+          if (!newNotice) { closeNoticeForm(); loadNotices(); return; }
+          return syncNoticePopup(newNotice, showAsPopup, title, content).then(function(popupId) {
+            if (!showAsPopup && !popupId) { closeNoticeForm(); loadNotices(); return; }
+            return adminApi('adminUpdate', { table: 'notices', id: newNotice.id, fields: { show_as_popup: showAsPopup, popup_id: popupId } }).then(function() {
+              closeNoticeForm();
+              loadNotices();
+            });
           });
         });
-      }).catch(function(e) { alert('등록 실패: ' + e.message); });
-    }
+      }
+    }).catch(function(e) {
+      alert((window._editingNoticeId ? '수정' : '등록') + ' 실패: ' + e.message);
+      if (submitBtn) submitBtn.textContent = window._editingNoticeId ? '수정 저장' : '등록';
+    });
   };
   window.deleteNotice = function(id) {
     if (!confirm('이 공지를 삭제하시겠습니까? (팝업으로 연동된 경우 팝업도 함께 삭제됩니다)')) return;
