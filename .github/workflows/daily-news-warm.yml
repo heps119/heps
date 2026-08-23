@@ -1,0 +1,38 @@
+name: 오늘의 상속뉴스 미리 준비하기
+
+# 목적: getDailyNews 액션은 그날 처음 호출될 때 구글 뉴스 RSS를 실제로 조회해
+# 캐시를 채운다(그 뒤로는 캐시만 즉시 반환). 이 워크플로가 매일 아침 딱 한 번
+# 미리 호출해 두면, 그날 첫 방문자가 거북이를 눌렀을 때 기다릴 필요 없이
+# 바로 뉴스가 보인다.
+#
+# 사용하는 키(apikey)는 index.html에도 그대로 노출되어 있는 "공개용" 키라
+# 여기 그대로 적어둬도 안전하다(관리자 권한이 있는 비밀 키가 아님).
+
+on:
+  schedule:
+    # 매일 UTC 22:30 = 한국시간(KST) 다음날 오전 07:30 에 실행
+    - cron: '30 22 * * *'
+  workflow_dispatch:
+    # Actions 탭에서 "Run workflow" 버튼으로 수동 실행도 가능
+
+jobs:
+  warm-daily-news:
+    runs-on: ubuntu-latest
+    steps:
+      - name: getDailyNews 호출해 캐시 미리 채우기
+        run: |
+          HTTP_CODE=$(curl -s -o /tmp/response.json -w "%{http_code}" \
+            -X POST "https://rqcbqtguwpdodsiazgtn.supabase.co/functions/v1/clever-handler" \
+            -H "Content-Type: application/json" \
+            -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJxY2JxdGd1d3Bkb2RzaWF6Z3RuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTI5MjgsImV4cCI6MjA5Nzk4ODkyOH0.FG0sXd8WzpuZWyI2IMtZK8x3Jfm3B-WEb75dZxHl0sg" \
+            -d '{"action":"getDailyNews"}')
+          echo "응답 코드: $HTTP_CODE"
+          echo "응답 내용:"
+          cat /tmp/response.json
+          echo ""
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo "✔ 정상 응답 — 오늘의 뉴스 캐시가 준비되었습니다."
+          else
+            echo "⚠ 예상과 다른 응답 코드입니다."
+            exit 1
+          fi
