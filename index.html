@@ -21782,8 +21782,12 @@ var calculated  = calcTax(taxBase);
 
 // 증여세액공제 (상증법 제28조) — ②의 한도: 상속세산출세액 × (가산한 증여재산 과세표준 ÷ 상속세 과세표준)
 // 사전증여재산을 가산하지 않았다면 공제할 증여세액도 없다(입력 불일치 방어).
-var giftCreditCap = taxBase > 0 ? Math.round(calculated * Math.min(gift / taxBase, 1)) : 0;
-var paidCredit    = Math.max(0, Math.min(paidTax, giftCreditCap));
+// 2026.11 수정(법령 대조): §28②의 한도는 상속세산출세액 × (가산한 증여재산의 "과세표준" ÷ 상속세 과세표준)이다.
+// 종전에는 증여재산"가액"(gift)을 분자로 써서 증여재산공제만큼 한도가 크게 잡혔다 — 공제를 뺀 giftNet을 쓴다.
+// 또 §28① 단서에 따라 상속세 과세가액이 5억원 이하이면 증여세액을 공제하지 않는다(2016-01-01 이후 상속개시분).
+var giftCreditCap = taxBase > 0 ? Math.round(calculated * Math.min(giftNet / taxBase, 1)) : 0;
+var paidCreditExcluded = (taxable <= 500000000);
+var paidCredit    = paidCreditExcluded ? 0 : Math.max(0, Math.min(paidTax, giftCreditCap));
 
 // 신고세액공제 (상증법 제69조①)
 //   = (산출세액 − 징수유예액 − 산출세액에서 공제·감면되는 금액) × 3%
@@ -21855,7 +21859,9 @@ s('r-base').textContent       = fmt(taxBase);
 s('r-rate').textContent       = getRateLabel(taxBase);
 s('r-calculated').textContent = fmt(calculated);
 s('r-report').textContent     = '△ ' + fmt(reportDeduct);
-s('r-paid').textContent       = paidTax > 0
+s('r-paid').textContent       = (paidTax > 0 && paidCreditExcluded)
+? '해당 없음 (상속세 과세가액 5억원 이하 — 증여세액공제 배제 §28① 단서 · 입력 ' + fmt(paidTax) + ')'
+: paidTax > 0
 ? '△ ' + fmt(paidCredit) + (paidCredit < paidTax ? ' (§28② 한도 적용 · 입력 ' + fmt(paidTax) + ')' : '')
 : '해당 없음';
 // 신고세액공제후 산출세액 = 산출세액 − 기납부증여세액공제 − 신고세액공제 = finalTax와 동일한 값이다.
