@@ -21170,7 +21170,9 @@ if (taxBase0 < 0) taxBase0 = 0;
 // 1천만으로 상향(그 이전은 5백만)되었다. "이번 증여일"(giftYear)이 비어 있으면 올해 기준
 // (현행 한도)으로 근사한다.
 var baseLimit = 0;
-if (relation === 1) baseLimit = 600000000;              // 배우자 6억
+// 2026.11 수정(법령 대조): 배우자 증여재산공제는 2008-01-01 이후 6억, 2003-01-01~2007-12-31은 3억, 그 전은 5억이다(상증법 §53①).
+// 종전에는 증여일과 무관하게 6억으로 계산했다.
+if (relation === 1) baseLimit = (giftYear >= 2008) ? 600000000 : (giftYear >= 2003 ? 300000000 : 500000000);   // 배우자
 else if (relation === 2 || relation === 6) baseLimit = (giftYear >= 2014) ? 50000000 : 30000000;  // 성년 자녀·손자녀
 else if (relation === 3 || relation === 7) baseLimit = (giftYear >= 2014) ? 20000000 : 15000000;  // 미성년 자녀·손자녀
 else if (relation === 5) baseLimit = (giftYear >= 2014) ? 50000000 : 30000000;          // 직계존속

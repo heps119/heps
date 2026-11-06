@@ -32,3 +32,20 @@ export function 상속세계산기(입력) {
   ctx.__run(false);
   return 결과;
 }
+
+// 증여세 계산기(calcGiftTax)를 가짜 DOM 위에서 실행한다. 금액은 화면과 같이 "원" 단위, relation은 수증자 구분 번호.
+export function 증여세계산기(입력) {
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+  const 결과 = {};
+  const 기본 = { g_new: '0', g_debt: '0', g_prior: '0', g_priortax: '0', g_prior_taxbase: '0', g_relation: '2', g_gift_date: '', g_prior_date: '', g_used_deduct: '0' };
+  const 값 = { ...기본, ...입력 };
+  const el = (id) => ({ value: 값[id] ?? '', checked: !!값[id + ':checked'], style: {},
+    set textContent(v) { 결과[id] = v; }, get textContent() { return 결과[id]; } });
+  const 상수 = html.match(/^var RELATION_LABELS = \{[\s\S]*?\n\};/m)[0];
+  const 코드 = ['parseNum', 'numFmt', 'setText', 'calcGiftTax'].map((n) => 함수추출(html, n)).join('\n') + '\n' + 상수 + '\nthis.__run = calcGiftTax;';
+  const ctx = { document: { getElementById: (id) => el(id) }, alert() {}, console, Math, parseInt, parseFloat, Number, String, isNaN, Date };
+  vm.createContext(ctx);
+  vm.runInContext(코드, ctx);
+  ctx.__run();
+  return 결과;
+}
