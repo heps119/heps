@@ -8308,8 +8308,8 @@ if (foot) foot.style.display = 'none';
         <div class="pen-field-row">
           <div class="pen-field">
             <label>장기보유특별공제율(%)</label>
-            <input type="number" id="ipt-ltcRate" value="6" step="1" oninput="iptCalc()">
-            <span class="pen-field-hint">오래 보유할수록 양도차익에서 더 많이 빼주는 공제입니다. 보통 1년에 2%씩 늘어나며(3년 이상부터), 자산 종류·1세대1주택 여부에 따라 다릅니다.</span>
+            <input type="number" id="ipt-ltcRate" value="" placeholder="비우면 법정 표1 자동" step="1" oninput="iptCalc()">
+            <span class="pen-field-hint">오래 보유할수록 양도차익에서 더 많이 빼주는 공제입니다. 상속받은 자산은 <strong>상속개시일부터</strong> 3년 이상 보유해야 공제되며(3년 6%, 이후 1년에 2%p, 최대 15년 30%), 비워 두시면 이 법정 표(소득세법 §95②, 표1)를 자동 적용합니다. 1세대1주택 표2(최대 80%)나 직접 가정하실 때만 숫자를 입력하세요.</span>
           </div>
           <div class="pen-field">
             <label>기본공제(원)</label>
@@ -20155,20 +20155,45 @@ if (base <= brackets[i][0]) return base * brackets[i][1] - brackets[i][2];
 }
 return 0;
 }
+// 소득세법 §95② 표1 장기보유특별공제율(%). 상속자산은 상속개시일 취득이므로 상속개시일~양도일이 보유기간(§95④; 가업상속공제 적용분만 피상속인 취득일 기산)
+function iptLtcTable1(years) {
+if (!(years >= 3)) return 0;
+return Math.min(30, 6 + 2 * (Math.floor(years) - 3));
+}
+// 소득세법 §104①2·3호 단기양도세율: 1년 미만 주택 70%/그 외 50%, 1~2년 주택 60%/그 외 40%. 상속자산 보유기간은 피상속인 취득일부터(§104②1호). 해당 없으면 0.
+function iptShortTermRate(holdYears, house) {
+if (!(holdYears >= 0) || holdYears >= 2) return 0;
+return holdYears < 1 ? (house ? 0.7 : 0.5) : (house ? 0.6 : 0.4);
+}
+// 달력 기준 경과연수(기념일 도래 시 정확히 정수가 되도록). 3년 '이상' 같은 경계가 윤년에 흔들리지 않게 한다.
+function iptYearsBetween(a, b) {
+var d1 = new Date(a), d2 = new Date(b);
+if (isNaN(d1) || isNaN(d2) || d2 < d1) return 0;
+var whole = d2.getUTCFullYear() - d1.getUTCFullYear();
+var ann = new Date(Date.UTC(d1.getUTCFullYear() + whole, d1.getUTCMonth(), d1.getUTCDate()));
+if (ann > d2) { whole--; ann = new Date(Date.UTC(d1.getUTCFullYear() + whole, d1.getUTCMonth(), d1.getUTCDate())); }
+return whole + (d2 - ann) / (1000 * 60 * 60 * 24) / 365.2425;
+}
 function iptDaysBetween(a, b) { return (new Date(b) - new Date(a)) / (1000*60*60*24); }
 function iptCalc() {
 var iv = parseFloat(penRawNumber('ipt-inheritValue')) || 0;
 var sv = parseFloat(penRawNumber('ipt-saleValue')) || 0;
 var ex = parseFloat(penRawNumber('ipt-expenses')) || 0;
 var bd = parseFloat(penRawNumber('ipt-basicDeduction')) || 0;
-var lt = parseFloat(document.getElementById('ipt-ltcRate').value) || 0;
+var ltRaw = document.getElementById('ipt-ltcRate').value;
 var id = document.getElementById('ipt-inheritDate').value;
 var sd = document.getElementById('ipt-saleDate').value;
-var years = (id && sd) ? iptDaysBetween(id, sd) / 365.2425 : 0;
+var years = (id && sd) ? iptYearsBetween(id, sd) : 0;
+var autoLt = iptLtcTable1(years);
+var lt = (String(ltRaw).trim() === '') ? autoLt : (parseFloat(ltRaw) || 0);
 var gain = Math.max(0, sv - iv - ex);
 var ltc = Math.min(gain, gain * lt / 100);
 var taxable = Math.max(0, gain - ltc - bd);
-var tax = iptProgressiveTax(taxable);
+var houseAsset = document.getElementById('ipt-assetType').value === 'house';
+var heirYrs = years > 0 ? years : (parseFloat(document.getElementById('ipt-heirYears').value) || 0);
+var holdForRate = (parseFloat(document.getElementById('ipt-decedentYears').value) || 0) + heirYrs;
+var stRate = iptShortTermRate(holdForRate, houseAsset);
+var tax = Math.max(iptProgressiveTax(taxable), taxable * stRate);
 var local = tax * 0.1;
 var total = tax + local;
 var high = sv > 1200000000;
@@ -20189,7 +20214,10 @@ if (same) notes.push('동일세대 상속: 피상속인과 상속인의 보유·
 if (high) notes.push('양도가액 12억원 초과: 1세대1주택 비과세가 인정되는 경우에도 고가주택 과세부분 계산이 필요할 수 있습니다.');
 if (five) notes.push('상속 후 5년 이내: 상속주택 관련 주택 수·특례 규정을 확인하세요. "5년 이내 무조건 중과 배제"로 해석하면 안 됩니다.');
 if (isMultiHome) notes.push('🔴 2026년 5월 9일부로 다주택자 조정대상지역 중과 한시배제가 종료되었습니다. 조정대상지역에 다주택을 보유하고 계시다면 이 계산에 반영되지 않은 최대 +30%p 중과세율과 장기보유특별공제 배제가 적용되어 실제 세액이 훨씬 클 수 있습니다.');
-notes.push('장기보유특별공제율은 입력값을 사용했습니다. 실제 적용률은 자산 유형·보유/거주기간·법령에 따라 확인해야 합니다.');
+if (stRate > 0) notes.push('단기양도세율 적용: 상속자산의 세율 판정 보유기간은 피상속인 취득일부터 셉니다(소득세법 §104②1호). 피상속인 보유 ' + (parseFloat(document.getElementById('ipt-decedentYears').value) || 0) + '년 + 상속 후 ' + heirYrs.toFixed(2) + '년 = ' + holdForRate.toFixed(2) + '년이라 ' + (stRate * 100).toFixed(0) + '%를 적용해 누진세와 비교한 큰 세액을 썼습니다(§104①).');
+if (String(ltRaw).trim() !== '' && lt > autoLt && years > 0) notes.push('입력하신 장기보유특별공제율 ' + lt + '%는 일반 자산 법정 표1(' + autoLt + '%)보다 큽니다. 1세대1주택 표2(보유+거주)에 해당하는 경우가 아니라면 낮춰 주세요.');
+if (years > 0 && years < 3) notes.push('상속개시일부터 3년 미만 보유라 장기보유특별공제가 없습니다(소득세법 §95②). 장특 보유기간은 상속개시일부터 셉니다(§95④; 가업상속공제 적용분만 피상속인 취득일부터).');
+notes.push('장기보유특별공제율 ' + lt + '%' + (String(ltRaw).trim() === '' ? '(법정 표1 자동)' : '(입력값)') + '를 적용했습니다. 조정대상지역 다주택 중과·미등기 등은 반영하지 않습니다.');
 
 document.getElementById('ipt-result').innerHTML =
 '<div class="pen-instrument-card">' +
@@ -20209,7 +20237,7 @@ document.getElementById('ipt-result').innerHTML =
 '<tr><td>장기보유특별공제</td><td>' + iptWon(ltc) + '</td></tr>' +
 '<tr><td>기본공제</td><td>' + iptWon(bd) + '</td></tr>' +
 '<tr><td>과세표준(단순계산)</td><td>' + iptWon(taxable) + '</td></tr>' +
-'<tr><td>양도소득세(기본 누진세율 가정)</td><td>' + iptWon(tax) + '</td></tr>' +
+'<tr><td>양도소득세(누진세율, 1~2년 미만 보유는 단기세율과 비교)</td><td>' + iptWon(tax) + '</td></tr>' +
 '<tr><td>지방소득세(양도소득세의 10% 가정)</td><td>' + iptWon(local) + '</td></tr>' +
 '</table></div>' +
 '<div class="pen-disclaimer" style="margin-top:0.9rem;">⚠️ <strong>중요:</strong> 이 결과는 상속주택 특례·1세대1주택 비과세·고가주택 안분·중과세율·세액감면 등을 모두 자동 확정한 신고세액이 아닙니다. 특히 주택은 아래 판단메모를 먼저 확인해야 합니다.</div>' +
