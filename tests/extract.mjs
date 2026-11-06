@@ -49,3 +49,14 @@ export function 증여세계산기(입력) {
   ctx.__run();
   return 결과;
 }
+
+// 롤링윈도우 시뮬레이터의 순수 계산 함수(DOM을 쓰지 않는 것)만 뽑아서 돌려 준다.
+export function 롤링윈도우함수() {
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+  const 상수 = ['RW_RELATION_TYPES', 'RW_TAX_TABLE'].map((n) => html.match(new RegExp(`^var ${n} = [\\s\\S]*?\\n[\\]}];`, 'm'))[0]).join('\n');
+  const 함수 = ['rwTaxCalc', 'rwBracketLimit', 'rwSurchargeRate', 'rwReportRate', 'rwAddYears', 'rwInWindow'].map((n) => 함수추출(html, n)).join('\n');
+  const ctx = { Date, Math, parseInt, String, isNaN, Number };
+  vm.createContext(ctx);
+  vm.runInContext(상수 + '\n' + 함수 + '\nthis.f = { rwTaxCalc, rwBracketLimit, rwSurchargeRate, rwReportRate, rwAddYears, rwInWindow };', ctx);
+  return ctx.f;
+}

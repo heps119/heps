@@ -5698,10 +5698,10 @@ return Math.max(0, Math.floor(base * b.rate - b.deduct));
 // 관계유형·증여일 기준 §53 증여재산공제 한도(연혁 반영).
 //   직계비속(자녀·손자녀, 미성년 포함): 2014.1.1 이후 성년 5천만/미성년 2천만, 그 전은 3천만/1천5백만
 //   기타친족(삼촌·사위·며느리 등): 2016.1.1 이후 1천만, 그 전은 5백만
-//   배우자: 6억(연혁상 변동 없음, 이 시뮬레이터가 다루는 기간 내)
+//   배우자: 2008.1.1 이후 6억, 2003.1.1~2007.12.31 3억, 그 전 5억 (2026.11 수정 — 종전 주석은 "연혁상 변동 없음"이었으나 사실과 다름)
 function rwBracketLimit(relType, dateStr) {
 var info = RW_RELATION_TYPES[relType] || RW_RELATION_TYPES.desc_adult;
-if (info.pool === 'spouse') return 600000000;
+if (info.pool === 'spouse') return (dateStr >= '2008-01-01') ? 600000000 : (dateStr >= '2003-01-01' ? 300000000 : 500000000); // 상증법 §53①: 2008 이후 6억, 2003~2007 3억, 그 전 5억
 if (info.pool === 'other') return (dateStr >= '2016-01-01') ? 10000000 : 5000000;
 if (info.minor) return (dateStr >= '2014-01-01') ? 20000000 : 15000000;
 return (dateStr >= '2014-01-01') ? 50000000 : 30000000;
