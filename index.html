@@ -8017,7 +8017,7 @@ if (foot) foot.style.display = 'none';
         <div class="pen-field"><label>직계비속(자녀) 수</label><input type="number" id="cc2-children" min="0" max="20" value="2" oninput="cc2Calc()"></div>
         <div class="pen-field"><label>직계존속 수 <span style="font-size:0.72rem; color:#999;">(자녀가 없을 때만 상속인)</span></label><input type="number" id="cc2-parents" min="0" max="4" value="0" oninput="cc2Calc()"></div>
       </div>
-      <div class="pen-field-hint" style="margin-top:0.3rem;">형제자매는 2026년 개정 민법에 따라 유류분 권리자에서 제외되어 계산합니다. 자녀가 있으면 직계존속은 법정상속인 계산에서 제외됩니다.</div>
+      <div class="pen-field-hint" style="margin-top:0.3rem;">형제자매는 현행 민법 제1112조(제4호 삭제)에 따라 유류분 권리자에서 제외되어 계산합니다. 자녀가 있으면 직계존속은 법정상속인 계산에서 제외됩니다.</div>
     </div>
 
     <div class="pen-instrument-card">
@@ -8444,6 +8444,11 @@ if (foot) foot.style.display = 'none';
         <label>연금저축·IRP 연간 납입액(만원)</label>
         <input type="text" inputmode="numeric" id="pen-pension-contribution" class="pen-comma-input" placeholder="예: 900">
         <span class="pen-field-hint">지금 매년 <strong>넣고 계신</strong> 금액입니다(세액공제 계산은 이 값을 씁니다). 합산 900만원 한도이며, <strong>연금저축만</strong> 넣으시면 600만원까지만 공제됩니다(소득세법 §59의3①).</span>
+      </div>
+      <div class="pen-field">
+        <label>이 중 연금저축계좌 납입액(만원, 선택)</label>
+        <input type="text" inputmode="numeric" id="pen-pension-savings" class="pen-comma-input" placeholder="비우면 IRP와 섞여 있다고 가정">
+        <span class="pen-field-hint">위 납입액 중 <strong>연금저축</strong>(펀드·보험)에 넣는 금액입니다. 나머지는 IRP·퇴직연금으로 봅니다. 연금저축분은 600만원, 연금저축 인정분+IRP는 합산 900만원까지만 공제됩니다(소득세법 §59의3①).</span>
       </div>
       <div class="pen-field">
         <label>근로소득(연, 만원)</label>
@@ -19511,6 +19516,14 @@ penRenderSummary();
 //    받으실 수 있는 혜택이다. 근로·사업소득이 0이면 계산 대신 안내 문구를 보여준다.
 //  - 연간 예상 수령액: 공적연금(연) + 개인연금(연) + 계산기에서 선택한 지급기간 기준
 //    교원공제회·행정공제회 수령액(만원으로 단위를 맞춰서)을 모두 더한다.
+function penPensionCreditBase(total, savings) {
+  // 소득세법 §59의3① 단서: 연금저축분 600만원 초과 불산입, (연금저축 인정분+퇴직연금계좌분) 900만원 초과 불산입. 단위: 만원
+  total = Math.max(0, total || 0);
+  if (savings === null || savings === undefined || savings === '') return Math.min(total, 900); // 구분 미입력: IRP와 섞였다고 가정
+  var sv = Math.min(Math.max(0, savings), total);
+  var irp = total - sv;
+  return Math.min(Math.min(sv, 600) + irp, 900);
+}
 function penRenderSummary() {
 var summaryLabel = document.getElementById('pen-summary-label');
 var summaryWrap = document.getElementById('pen-summary-wrap');
@@ -19570,7 +19583,8 @@ var isLowerBracket = (businessIncome === 0)
 ? (earnedIncome <= 5500) // 근로소득만 있는 경우: 총급여 5,500만원 기준
 : (comprehensiveIncome <= 4500); // 사업소득이 있는 경우: 종합소득금액 4,500만원 기준
 var creditRate = isLowerBracket ? 0.165 : 0.132;
-var creditBase = Math.min(pensionContribution, 900);
+var savingsRaw = penRawNumber('pen-pension-savings');
+var creditBase = penPensionCreditBase(pensionContribution, savingsRaw === '' ? null : parseInt(savingsRaw, 10) || 0);
 var creditAmount = Math.round(creditBase * creditRate);
 var bracketLabel = isLowerBracket
 ? '종합소득금액 4,500만원 이하(근로소득만 있는 경우 총급여 5,500만원 이하) — 세율 16.5%(지방소득세 포함)'
@@ -19579,7 +19593,7 @@ taxCreditHtml =
 '<div style="padding:1rem 1.1rem; background:#eaf6ee; border-radius:8px; margin-bottom:0.8rem;">' +
 '<div style="font-size:0.85rem; color:#1e5c33; font-weight:700; margin-bottom:0.3rem;">💰 연간 세액공제 예상액</div>' +
 '<div style="font-size:1.3rem; font-weight:800; color:#1e5c33;">' + creditAmount.toLocaleString('ko-KR') + '만원</div>' +
-'<div style="font-size:0.78rem; color:#4a7a58; margin-top:0.3rem;">연금저축·IRP 연간 납입액 ' + pensionContribution.toLocaleString('ko-KR') + '만원 중 세액공제 한도(연금저축+IRP 합산 900만원; 연금저축만이면 600만원) 이내 ' + creditBase.toLocaleString('ko-KR') + '만원 × ' + (creditRate*100).toFixed(1) + '%로 추정<br>적용 구간: ' + bracketLabel + '<br>※ 연금저축계좌분은 600만원까지만 인정되므로 연금저축만 납입하시면 공제액이 더 작습니다. 또한 공제액은 종합소득 산출세액을 넘지 못합니다.</div>' +
+'<div style="font-size:0.78rem; color:#4a7a58; margin-top:0.3rem;">연금저축·IRP 연간 납입액 ' + pensionContribution.toLocaleString('ko-KR') + '만원 중 세액공제 한도(연금저축분 600만원, 연금저축 인정분+IRP 합산 900만원) 이내 ' + creditBase.toLocaleString('ko-KR') + '만원 × ' + (creditRate*100).toFixed(1) + '%로 추정<br>적용 구간: ' + bracketLabel + '<br>※ 연금저축 납입액을 따로 입력하지 않으면 IRP가 섞여 있다고 가정해 900만원까지 계산합니다. 또한 공제액은 종합소득 산출세액을 넘지 못합니다.</div>' +
 '<div style="font-size:0.72rem; color:#6a9478; margin-top:0.5rem; padding-top:0.5rem; border-top:1px dashed #cfe3d5; line-height:1.7;">' +
 '📖 근거: 소득세법 제59조의3 제1항은 종합소득이 있는 거주자가 연금계좌에 납입한 금액 중 일정액을 그 과세기간의 종합소득 산출세액에서 공제하도록 정하고 있습니다. 공제율은 같은 항 본문에 직접 규정되어 있으며(2023.1.1 이후 적용 문구), 종합소득금액 4,500만원(근로소득만 있으면 총급여 5,500만원) 이하는 15%(지방소득세 포함 16.5%), 초과는 12%(지방소득세 포함 13.2%)가 적용됩니다.' +
 '</div>' +
@@ -19964,7 +19978,8 @@ window.cc2Calc = function() {
   else msg += '· 아직 4번 "기여분 입력"에 기록된 내용이 없습니다.<br>';
   if (judgedGifts.length) msg += '· 3번에서 보상적 증여로 표시하신 증여 항목을 반영하면, 유류분 산정 기초재산에서 참고용으로 ' + cc2Won(combinedGiftExclude) + '이 제외됩니다.<br>';
   else msg += '· 아직 3번에 보상적 증여로 표시된 증여 항목이 없습니다.<br>';
-  msg += '· 대법원 2026. 5. 29. 선고 2024다208261 판결은 보상적 증여·유증을 기여에 상응하는 범위에서 유류분 산정 기초재산에서도 제외하는 구조를 확인했습니다. 이 조항은 2024년 4월 25일 이후 개시된 상속에 한해 적용됩니다.<br>';
+  msg += '· 대법원 2026. 5. 29. 선고 2024다208261 판결은 보상적 증여·유증을 기여에 상응하는 범위에서 유류분 산정 기초재산에서도 제외하는 구조를 확인했습니다. 이 조항은 2024년 4월 25일 이후 개시된 상속에 한해 적용됩니다(민법 부칙 2026.3.17. 제2조).<br>';
+  msg += '· <strong>이 계산기가 다루지 않는 것:</strong> 입력한 증여의 시기(민법 제1114조의 산입 기간)는 계산에 반영하지 않고 모두 산입합니다. 유류분 반환청구권은 상속개시와 반환할 증여·유증을 안 때부터 1년, 상속개시 후 10년이면 소멸하며(제1117조), 가액 지급을 청구한 날부터 이자가 붙습니다(제1115조 제1항, 2026.3.17. 이후 개시된 상속). 기여분은 상속재산에서 유증을 뺀 액을 넘지 못하나(제1008조의2 제3항) 유증을 따로 입력받지 않아 순상속재산을 한도로 봅니다.<br>';
   msg += '· <strong>실무 체크:</strong> 동거·간호 기간, 병원·간병비, 재산관리 내역, 증여계약서, 피상속인의 의사 및 기여와 증여의 상응관계를 확보하세요.';
   document.getElementById('cc2-report').innerHTML = msg;
 };
@@ -20363,6 +20378,7 @@ var personalTypes = Array.prototype.slice.call(document.querySelectorAll('#pen-p
 var personalAmt = penRawNumber('pen-personal-amt');
 var personalYears = (document.getElementById('pen-personal-years') || {}).value || '';
 var pensionContribution = penRawNumber('pen-pension-contribution');
+var pensionSavings = penRawNumber('pen-pension-savings');
 var earnedIncome = penRawNumber('pen-earned-income');
 var earnedEndAge = (document.getElementById('pen-earned-end-age') || {}).value || '';
 var businessIncome = penRawNumber('pen-business-income');
@@ -20385,6 +20401,7 @@ var instrumentDetails = penGatherInstrumentDetails(instrumentKeys);
 var summary = '나이:' + (age||'미입력') + ' / 배우자:' + spouse + ' / 공적연금:' + (publicType||'없음') + ' 월 ' + (publicAmt||'0') + '만원' +
 ' / 개인연금:' + (personalTypes||'없음') + ' 연 ' + (personalAmt||'0') + '만원(수령기간 ' + (personalYears||'20') + '년)' +
 ' / 연금저축·IRP 연간 납입액:' + (pensionContribution||'0') + '만원' +
+(pensionSavings ? ' (그중 연금저축계좌분:' + pensionSavings + '만원)' : '') +
 ' / 근로소득:' + (earnedIncome||'0') + '만원' + (earnedEndAge ? '(종료 ' + earnedEndAge + '세)' : '') +
 ' / 사업소득:' + (businessIncome||'0') + '만원' + (businessEndAge ? '(종료 ' + businessEndAge + '세)' : '') +
 ' / 금융자산:' + (financialAsset||'0') + '만원 / 이자배당:' + (interestDiv||'0') + '만원 / 주택재산:' + (realestate||'미입력') + '만원' +
