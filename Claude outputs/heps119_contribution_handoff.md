@@ -14,6 +14,15 @@ HEPS Intelligence 쪽 검토에서 "특별수익 반영 구체적 상속분" 계
 - **수정 공식**: `(순상속재산 + 생전증여 총액 − 인정 기여분 합계) × 법정상속분 − 본인 특별수익(증여+유증, 보상 인정분 제외) + 본인 인정 기여분`. 유증은 "현재 상속재산"에 이미 포함돼 있으므로 간주상속재산에는 다시 더하지 않고, 본인 몫에서만 뺍니다.
 - **검증**: 위 예시(3억/7억, 합계 10억)와, 기여분이 섞인 경우(자녀2에게 2억 기여분 인정 시 2억/8억, 합계 10억 유지)를 Playwright로 실제 렌더링까지 확인했고, `tests/contribution.test.mjs`에 회귀 테스트 3건을 추가해 전체 7개 테스트 파일이 모두 통과합니다.
 
+## 0-1. 2026-11-07(2차) 수정 — HEPS Intelligence 쪽 리뷰(검토의견서)로 발견된 추가 2건
+
+HEPS Intelligence 개발 세션이 위 1차 수정판을 산술로 재현·검토하며 추가로 2건을 더 지적해 주셨고, 모두 맞는 지적이어서 heps119 원본에서 다시 고쳤습니다.
+
+1. **보상적 증여로 인정된 금액이 간주상속재산을 부풀리는 오류.** 1차 수정은 `net + giftTotal`(생전증여 전액)을 그대로 간주상속재산에 더했는데, 생전증여 중 "보상적 증여"로 인정된 부분(§1008 단서)은 그 사람 몫에서 빼지 않는 대신 애초에 공통 풀에도 넣지 말았어야 합니다(기여에 대한 정당한 대가이지 상속분의 선지급이 아니므로). **예(지적해 주신 사례)**: 상속 10억, 자녀2명, 자녀1 생전증여 4억 전액을 보상적 증여로 100% 인정 — 1차 수정판 결과 7억/7억(합계 14억, 4억 과다 계상). 2차 수정 후: 5억/5억(합계 10억, 정상). 수정은 `giftTotal`을 그대로 쓰지 않고 `giftTotalForImputed = Σ(생전증여 중 보상 인정분을 제외한 금액)`을 새로 계산해 간주상속재산에 더하는 방식입니다.
+2. **유증 수령자의 "총귀속액" 표시 누락.** 유증은 간주상속재산에 다시 더하지 않고 본인 몫에서만 빼므로, "구체적 상속분(참고)" 열만 보면 유증 수령자의 실제 총취득액이 누락돼 보입니다(예: 상속 10억·자녀2명·자녀1 유증 2억 → "구체적 상속분" 열은 3억/5억으로 보이지만 합계가 8억이라 2억이 "사라진 것처럼" 보임). **대응**: 표에 "유증으로 받은 금액"·"총귀속액(구체적 상속분+유증, 참고)" 열을 추가했습니다. 위 예시는 총귀속액 5억/5억(합계 10억)으로 정합성이 확인됩니다.
+
+HEPS Intelligence 쪽 검토는 또한 **대법원 2026. 5. 29. 선고 2024다208261 판결의 적용범위 안내 문구**도 지적했습니다 — heps119 화면 문구가 "개정 민법 제1008조 단서는 2024년 4월 25일 이후 개시된 상속에만 적용된다"고만 안내했는데, 해당 판결 원문을 직접 대조해 보니(법제처 판례 DB) 이는 절반만 맞는 설명입니다. 부칙 §2는 분명히 "2024.4.25 이후 개시 상속"에 신법을 적용한다고 정하지만, **같은 판결은 그 이전에 개시된 상속이라도 2024.4.25 헌법불합치결정 당시 법원에 재판이 계속 중이던 사건에는 소급효가 미쳐 신법이 적용된다고 명시적으로 판시**했습니다(해당 사안 자체가 피상속인이 2018년 사망한, 부칙 기준일보다 훨씬 이전에 개시된 상속이었습니다). 상속개시일 하나만으로 적용 여부를 단정하면 안 됩니다. heps119의 안내 문구 4곳(상단 경고 박스, 음성 안내, 사용법 모달 "1.기본정보", 자동 리포트)을 모두 이 취지로 보완했습니다 — 아래 §9의 코드는 보완된 최종판입니다.
+
 ---
 
 ## 1. 이 계산기가 하는 일 (3가지 서로 다른 효과)
@@ -24,7 +33,7 @@ HEPS Intelligence 쪽 검토에서 "특별수익 반영 구체적 상속분" 계
 2. **보상적 증여·유증 제외** (민법 §1008 단서, 2026.3.17 개정, 유류분 산정 기초재산에서 제외) — 증여·유증이 기여에 대한 "보상으로" 행해진 것이면, 그 기여에 상응하는 범위에서 유류분 기초재산에서 뺌. 증여 항목마다 개별 판단(0%/50%/100% 시나리오).
 3. **특별수익(증여+유증) 반영 구체적 상속분** (민법 §1008 본문) — 기여분 반영 1차 배분액에서, 각 상속인이 미리 받은 특별수익(증여+유증, 단 §1008 단서로 보상 인정된 부분은 제외)을 공제해 "진짜" 구체적 상속분을 보여줌. 2026-11-06에 새로 추가된 부분.
 
-판례 근거로 대법원 2026. 5. 29. 선고 2024다208261 판결을 인용하며(보상적 증여·유증의 유류분 기초재산 제외 구조 확인), 개정 §1008 단서는 **2024년 4월 25일 이후 개시된 상속**에만 적용됩니다(부칙 §2).
+판례 근거로 대법원 2026. 5. 29. 선고 2024다208261 판결을 인용합니다(보상적 증여·유증의 유류분 기초재산 제외 구조 확인). 개정 §1008 단서는 원칙적으로 **2024년 4월 25일 이후 개시된 상속**에 적용되나(부칙 §2), 같은 판결은 그 이전에 개시된 상속이라도 2024.4.25 헌법불합치결정 당시 법원에 재판이 계속 중이었다면 소급효가 미쳐 신법이 적용된다고 판시했으므로, 상속개시일만으로 적용 여부를 단정할 수 없습니다.
 
 ## 2. 법령 근거 대조 현황 (docs/법령근거표.md 발췌, 법제처 2026.3.17 시행본 대조)
 
@@ -34,10 +43,10 @@ HEPS Intelligence 쪽 검토에서 "특별수익 반영 구체적 상속분" 계
 | 유류분율 | 직계비속·배우자 1/2, 직계존속 1/3, 형제자매 제외 | §1112 1~3호(4호 삭제) | 확인 |
 | 산정 기초 | 순상속재산 + 생전증여 전부 − 채무(유증은 2번 재산에 이미 포함되어 재가산 안 함) | §1113① | 확인 |
 | 보상적 증여 제외 | 주장액×인정비율(증빙수준별 0/50/100%)을 기초재산에서 차감 | §1008 단서(2026.3.17 신설) + §1118, 부칙§2(2024.4.25 이후 개시분) | 확인 |
-| 판례 인용 | 대법원 2026.5.29. 2024다208261 | 판결문 대조 완료 | 확인 |
+| 판례 인용 | 대법원 2026.5.29. 2024다208261 | 판결문 전문 대조(2026-11-07 재확인): 부칙§2 "2024.4.25 이후 개시 상속" 원칙 외에, 그 이전 개시 상속도 헌법불합치결정(2024.4.25) 당시 법원에 재판이 계속 중이었다면 소급효가 미쳐 신법이 적용된다고 판시(해당 판결 자체가 2018년 개시 상속 사안) | 확인 |
 | 기여분 | 기여자별 협의/심판 가정 시나리오(0/50/100%) | §1008조의2 | 시뮬레이션(법적 확정 아님) |
 | **기여분 한도** | 순상속재산 한도로만 계산 | §1008조의2③ "상속재산−유증" | **근사** — 3번 증여입력에서 유증 여부는 구분되지만, 4번 기여분 한도 산정식에는 그 유증 공제를 연동하지 않음 |
-| 구체적 상속분(특별수익 반영) | **(2026-11-07 수정)** 간주상속재산(순상속재산+생전증여−인정기여분)×법정상속분 − 본인 특별수익(증여+유증, 보상 인정분 제외) + 본인 기여분, 0원 하한 | §1008·§1008조의2① | 확인(단, **초과특별수익자 재분배 방법은 미계산** — 아래 4장 참고) |
+| 구체적 상속분(특별수익 반영) | **(2026-11-07 2차 수정)** 간주상속재산(순상속재산 + "보상 인정분을 제외한" 생전증여 − 인정기여분)×법정상속분 − 본인 특별수익(증여+유증, 보상 인정분 제외) + 본인 기여분, 0원 하한. 유증 수령자는 별도 "총귀속액" 열(구체적 상속분+유증) 표시 | §1008·§1008조의2① | 확인(단, **초과특별수익자 재분배 방법은 미계산** — 아래 4장 참고) |
 | 증여 산입 기간 | 시기 무관 전부 산입 | §1114(상속인 외 1년 등) | 근사(안내 문구만) |
 | 반환청구 시효·이자 | 계산 안 함 | §1117(1년/10년), §1115①(2026.3.17 이후 개시분 이자) | 안내 문구만 |
 
@@ -79,7 +88,7 @@ HEPS Intelligence 쪽 검토에서 "특별수익 반영 구체적 상속분" 계
 - **`cc2GiftAppliedExclude(g)`**: 증여 1건에 대해 §1008 단서상 "보상으로 인정되는 제외액"을 계산하는 공용 함수. `qual==='no'`면 0. 그 외에는 `min(exclude, amount) × (evidence===3 ? 1.0 : evidence===1 ? 0 : 0.5)`. 유류분 기초재산 제외 계산과 특별수익 공제 계산 양쪽에서 재사용됩니다(두 곳의 수치가 항상 일치하도록).
 - **유류분 산정 기초재산**: `baseBefore = net + giftTotal` (net=순상속재산, giftTotal=유증 제외 생전증여 합계). 보상적 증여 제외 반영 후 `baseFinal = baseBefore - combinedGiftExclude`.
 - **기여분 반영 1차 배분액**: 기여자별로 "가장 유력한" 인정비율(증빙 높음→100%, 보통→50%, 낮음→0%)을 적용한 "종합 참고 추정"을 만들고, 그 기여분만큼을 상속재산에서 먼저 공제한 뒤 법정상속분으로 분배 + 기여자에게 인정 기여분을 더함.
-- **특별수익 반영 구체적 상속분(2026-11-07 수정판)**: 먼저 간주상속재산 `imputedEstate = max(0, net + giftTotal - 인정기여분합계)`를 구하고, `firstAllocation = imputedEstate × h.share + (그 사람의 인정 기여분)`, 그 다음 `finalShare = max(0, firstAllocation - benefit)` (`benefit = Σ(증여·유증 금액 - cc2GiftAppliedExclude(그 건))`). 유증은 "현재 상속재산"에 이미 포함돼 있으므로 `imputedEstate`에는 다시 더하지 않고 `benefit` 계산(본인 몫 차감)에서만 반영합니다. **(구 2026-11-06판의 버그)** 이전 버전은 `firstAllocation`을 `net × h.share`(생전증여를 더하지 않은 순상속재산 기준)로 계산해, 상속인들의 `finalShare` 합계가 생전증여액만큼 순상속재산보다 작아지는 오류가 있었습니다 — 2026-11-07 외부 검토로 발견·수정. 특별수익이 1차 배분액을 초과하면 0원으로 하한(= "초과특별수익자"), **그 초과분을 다른 공동상속인에게 재분배하는 법리는 구현하지 않음** — 이 부분이 아직 미해결 과제입니다.
+- **특별수익 반영 구체적 상속분(2026-11-07 2차 수정판)**: 먼저 `giftTotalForImputed = Σ_{생전증여}(amount - cc2GiftAppliedExclude(그 건))`(보상 인정분을 제외한, "진짜 특별수익으로 남는" 생전증여만 합산)을 구하고, 간주상속재산 `imputedEstate = max(0, net + giftTotalForImputed - 인정기여분합계)`, `firstAllocation = imputedEstate × h.share + (그 사람의 인정 기여분)`, 그 다음 `finalShare = max(0, firstAllocation - benefit)` (`benefit = Σ(증여·유증 금액 - cc2GiftAppliedExclude(그 건))`, 생전증여+유증 모두 포함). 유증은 "현재 상속재산"에 이미 포함돼 있으므로 `imputedEstate`에는 다시 더하지 않고 `benefit` 계산(본인 몫 차감)에서만 반영하며, 유증 수령자는 `totalReceived = finalShare + bequestReceived`로 실제 총취득액을 별도 표시합니다. **(과거 버그 2건, 모두 수정됨)** ① 1차 수정 전: `firstAllocation`을 `net × h.share`(생전증여를 전혀 더하지 않은 순상속재산 기준)로 계산해 `finalShare` 합계가 생전증여액만큼 순상속재산보다 작아짐. ② 1차 수정 후~2차 수정 전: `giftTotal`(보상 인정분 구분 없이 생전증여 전액)을 그대로 더해, 보상적 증여로 인정된 금액만큼 `finalShare` 합계가 순상속재산을 초과함 — 둘 다 HEPS Intelligence 이식 검토 중 외부 검토로 발견·수정. 특별수익이 1차 배분액을 초과하면 0원으로 하한(= "초과특별수익자"), **그 초과분을 다른 공동상속인에게 재분배하는 법리는 구현하지 않음** — 이 부분이 아직 미해결 과제입니다.
 - 세 효과(①기여분 ②보상적 증여 제외 ③특별수익 반영)는 화면에서 항상 분리해서 보여주고 합산하지 않습니다.
 
 ## 5. 알려진 한계 (이식 시 꼭 같이 가져가야 할 미해결 과제)
@@ -115,7 +124,7 @@ HTML은 heps119 공통 CSS 클래스를 재사용합니다(이식 대상 사이�
   <div class="reveal" style="max-width:75rem; margin:0 auto 2.5rem; text-align:center;">
     <span class="section-eyebrow" style="color:var(--gold);">CONTRIBUTION &amp; LEGAL RESERVE</span>
     <h2 style="color:var(--navy); margin-bottom:1.2rem; display:flex; align-items:center; justify-content:center; gap:0.6rem; flex-wrap:wrap;">기여상속 및 유류분 분석 시뮬레이터
-      <button type="button" class="site-speak-btn" data-speaking="0" onclick="siteSpeak('이 계산기는 법원이 기여분이나 보상적 증여를 확정하는 법률판정기가 아닙니다. 사용자가 입력한 사실과 기여에 상응하는 보상액을 기준으로 시뮬레이션합니다. 2026년 3월 17일부터 시행된 개정 민법 제1008조 단서에 따라, 특별히 부양하거나 재산 유지·증가에 기여한 데 대한 보상으로 받은 증여는 기여에 상응하는 범위에서 유류분 계산에서 제외될 수 있습니다. 이 조항은 2024년 4월 25일 이후 개시된 상속부터 적용됩니다.', this)" title="음성으로 듣기">🔊</button>
+      <button type="button" class="site-speak-btn" data-speaking="0" onclick="siteSpeak('이 계산기는 법원이 기여분이나 보상적 증여를 확정하는 법률판정기가 아닙니다. 사용자가 입력한 사실과 기여에 상응하는 보상액을 기준으로 시뮬레이션합니다. 2026년 3월 17일부터 시행된 개정 민법 제1008조 단서에 따라, 특별히 부양하거나 재산 유지·증가에 기여한 데 대한 보상으로 받은 증여는 기여에 상응하는 범위에서 유류분 계산에서 제외될 수 있습니다. 이 조항은 2024년 4월 25일 이후 개시된 상속에 적용되며, 그 전에 개시된 상속이라도 그 날짜에 이미 법원에 재판이 계속 중이었다면 대법원 판례에 따라 적용될 수 있습니다.', this)" title="음성으로 듣기">🔊</button>
       <button type="button" onclick="cc2OpenHelp()" style="font-size:0.78rem; font-weight:700; font-family:'Noto Sans KR',sans-serif; background:var(--navy); color:var(--gold2); border:none; padding:0.4rem 0.9rem; border-radius:20px; cursor:pointer; display:inline-flex; align-items:center; gap:0.3rem;" title="용어 정의, 입력 방법, 결과 해석을 안내하는 설명서를 엽니다">📖 사용법 안내</button>
       <button type="button" onclick="cc2OpenHelpWindow()" style="font-size:0.78rem; font-weight:700; font-family:'Noto Sans KR',sans-serif; background:#fff; color:var(--navy); border:1.5px solid var(--navy); padding:0.4rem 0.9rem; border-radius:20px; cursor:pointer; display:inline-flex; align-items:center; gap:0.3rem;" title="설명서를 별도 창으로 열어, 이 화면과 나란히(듀얼모니터 등) 두고 보실 수 있습니다">🪟 새 창에서 보기</button>
     </h2>
@@ -125,7 +134,7 @@ HTML은 heps119 공통 CSS 클래스를 재사용합니다(이식 대상 사이�
   </div>
 
   <div class="reveal" style="max-width:75rem; margin:0 auto 1.5rem; background:#fff7e6; border-left:4px solid #d98c00; border-radius:4px; padding:1rem 1.3rem; font-size:0.85rem; line-height:1.8; color:#5c4400;">
-    ⚖️ <strong>중요한 이용 안내:</strong> 이 계산기는 법원이 기여분이나 보상적 증여를 확정하는 법률판정기가 아닙니다. 사용자가 입력한 사실과 "기여에 상응하는 보상액"을 기준으로 <strong>시뮬레이션</strong>합니다. 실제 사건에서는 상속개시일, 증여·유증의 성격, 공동상속인 여부, 유류분 산정재산, 채무 및 소송 경과 등을 별도로 검토해야 합니다. 또한 개정 민법 제1008조 단서는 <strong>2024년 4월 25일 이후 개시된 상속</strong>에 한해 적용되니, 상속개시일을 먼저 확인해 주세요. <strong>대법원 2026. 5. 29. 선고 2024다208261 판결</strong>은 이 단서의 보상적 증여·유증이 기여에 상응하는 범위에서 유류분 산정 기초재산에서도 제외된다는 점을 확인했습니다. 이 계산기는 기여분(상속재산분할)·보상적 증여 제외(유류분)·특별수익 반영(유류분) 세 가지를 서로 다른 효과로 보고, 하나의 숫자로 합산하지 않습니다.
+    ⚖️ <strong>중요한 이용 안내:</strong> 이 계산기는 법원이 기여분이나 보상적 증여를 확정하는 법률판정기가 아닙니다. 사용자가 입력한 사실과 "기여에 상응하는 보상액"을 기준으로 <strong>시뮬레이션</strong>합니다. 실제 사건에서는 상속개시일, 증여·유증의 성격, 공동상속인 여부, 유류분 산정재산, 채무 및 소송 경과 등을 별도로 검토해야 합니다. 또한 개정 민법 제1008조 단서는 원칙적으로 <strong>2024년 4월 25일 이후 개시된 상속</strong>에 적용됩니다(민법 부칙 2026.3.17. 제2조). 다만 <strong>대법원 2026. 5. 29. 선고 2024다208261 판결</strong>은 그 이전에 개시된 상속이라도 2024년 4월 25일 헌법불합치결정 당시 법원에 재판이 계속 중이었다면(위헌제청신청을 따로 하지 않았어도) 소급효가 미쳐 신법 조항이 적용된다고 보았으므로, 상속개시일만으로 적용 여부를 단정하지 말고 관련 소송 계속 여부도 확인해 주세요. 이 계산기는 기여분(상속재산분할)·보상적 증여 제외(유류분)·특별수익 반영(유류분) 세 가지를 서로 다른 효과로 보고, 하나의 숫자로 합산하지 않습니다.
   </div>
 
   <div class="reveal" style="max-width:75rem; margin:0 auto; display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;">
@@ -274,8 +283,8 @@ HTML은 heps119 공통 CSS 클래스를 재사용합니다(이식 대상 사이�
       <h4 style="margin-top:1rem;">종합 참고 추정 기준 구체적 상속분표</h4>
       <div style="overflow-x:auto;"><table class="pen-compare-table" id="cc2-combinedHeirTable"><tr><th>상속인</th><th>법정상속지분</th><th>기여분 미반영 구체적 상속분</th><th>종합 참고 추정 반영 후</th></tr></table></div>
       <h4 style="margin-top:1rem;">특별수익(증여·유증) 반영 구체적 상속분표 <span style="font-size:0.72rem; color:#999; font-weight:400;">(민법 제1008조)</span></h4>
-      <div class="pen-field-hint" style="margin-bottom:0.6rem;">순상속재산에 생전증여 총액을 더하고 인정 기여분 합계를 뺀 "간주상속재산"을 법정상속분으로 나눈 뒤(유증은 "2. 현재 상속재산"에 이미 포함돼 있어 간주상속재산에는 다시 더하지 않습니다), 기여자에게는 인정 기여분을 더하고 각자가 3번에서 입력한 증여·유증(특별수익)을 공제합니다. 기여에 대한 보상으로 인정된 부분(3번에서 "예"/"판단 필요"로 표시하고 보상액을 주장한 부분)은 특별수익에서도 같은 비율로 제외됩니다(민법 제1008조 단서). 특별수익이 1차 배분액보다 많으면(초과특별수익자) 그 사람의 구체적 상속분은 0으로 표시되며, 초과분을 다른 상속인에게 재분배하는 방법(초과특별수익자 조정)은 이 계산기가 반영하지 않으므로 실제 사건에서는 전문가와 상담하세요.</div>
-      <div style="overflow-x:auto;"><table class="pen-compare-table" id="cc2-specialBenefitTable"><tr><th>상속인</th><th>간주상속재산 기준 1차 배분액</th><th>받은 특별수익(증여+유증, 보상 인정분 제외)</th><th>특별수익 반영 구체적 상속분(참고)</th></tr></table></div>
+      <div class="pen-field-hint" style="margin-bottom:0.6rem;">순상속재산에 생전증여 중 특별수익으로 남는 부분(기여에 대한 보상으로 인정된 부분은 제외)을 더하고 인정 기여분 합계를 뺀 "간주상속재산"을 법정상속분으로 나눈 뒤(유증은 "2. 현재 상속재산"에 이미 포함돼 있어 간주상속재산에는 다시 더하지 않습니다), 기여자에게는 인정 기여분을 더하고 각자가 3번에서 입력한 증여·유증(특별수익)을 공제합니다. 기여에 대한 보상으로 인정된 부분(3번에서 "예"/"판단 필요"로 표시하고 보상액을 주장한 부분)은 특별수익에서도 같은 비율로 제외됩니다(민법 제1008조 단서). 특별수익이 1차 배분액보다 많으면(초과특별수익자) 그 사람의 구체적 상속분은 0으로 표시되며, 초과분을 다른 상속인에게 재분배하는 방법(초과특별수익자 조정)은 이 계산기가 반영하지 않으므로 실제 사건에서는 전문가와 상담하세요. 유증을 받은 상속인은 "구체적 상속분"만으로는 실제 총취득액이 드러나지 않으므로, 맨 오른쪽 "총귀속액" 열(구체적 상속분+유증)을 함께 보세요.</div>
+      <div style="overflow-x:auto;"><table class="pen-compare-table" id="cc2-specialBenefitTable"><tr><th>상속인</th><th>간주상속재산 기준 1차 배분액</th><th>받은 특별수익(증여+유증, 보상 인정분 제외)</th><th>특별수익 반영 구체적 상속분(참고)</th><th>유증으로 받은 금액</th><th>총귀속액(구체적 상속분+유증, 참고)</th></tr></table></div>
     </div>
 
     <div class="pen-instrument-card" style="grid-column:1/-1;">
@@ -515,27 +524,36 @@ window.cc2Calc = function() {
   }
 
   // ── 특별수익(증여·유증) 반영 구체적 상속분 — 민법 §1008 ──
-  // 간주상속재산(= 순상속재산 + 생전증여 총액 − 인정 기여분 합계)을 법정상속분으로 나눈 뒤,
-  // 기여자에게는 인정 기여분을 더하고, 각자가 받은 특별수익(생전증여+유증)을 공제한다. 유증은
-  // "2. 현재 상속재산"에 이미 포함돼 있어 간주상속재산에는 다시 더하지 않고 본인 몫에서만 뺀다.
-  // 기여에 대한 보상으로 인정된 부분(cc2GiftAppliedExclude)은 §1008 단서에 따라 특별수익에서도
-  // 제외한다. 특별수익이 1차 배분액을 초과하면(초과특별수익자) §1008 본문에 따라 구체적 상속분은
-  // 0으로 하고, 초과분의 재분배(초과특별수익자 조정)는 반영하지 않는다.
-  // (2026-11-07 수정: 이전 버전은 생전증여를 간주상속재산에 합산하지 않아 상속인들의 구체적
-  // 상속분 합계가 순상속재산보다 작아지는 오류가 있었음 — 외부 검토로 발견, imputedEstate로 수정)
+  // 간주상속재산(= 순상속재산 + "특별수익으로 남는" 생전증여 − 인정 기여분 합계)을 법정상속분으로
+  // 나눈 뒤, 기여자에게는 인정 기여분을 더하고, 각자가 받은 특별수익(생전증여+유증)을 공제한다.
+  // 기여에 대한 보상으로 인정된 부분(cc2GiftAppliedExclude)은 §1008 단서에 따라 "특별수익에서"
+  // 제외되므로, 간주상속재산에 더할 때도 그 인정분만큼은 빼고 더한다(그 돈은 기여에 대한 정당한
+  // 대가이지 상속분의 선지급이 아니므로 공통 풀을 부풀리면 안 됨 — 2026-11-07 외부 검토로 발견한
+  // 버그: 이전 버전은 생전증여 전액을 그대로 간주상속재산에 더해, 보상 인정분만큼 상속인들의
+  // 구체적 상속분 합계가 순상속재산을 초과하는 오류가 있었음). 유증은 "2. 현재 상속재산"에 이미
+  // 포함돼 있어 간주상속재산에는 더하지 않고 본인 몫에서만 뺀다. 특별수익이 1차 배분액을
+  // 초과하면(초과특별수익자) §1008 본문에 따라 구체적 상속분은 0으로 하고, 초과분의
+  // 재분배(초과특별수익자 조정)는 반영하지 않는다.
   var specialBenefitEl = document.getElementById('cc2-specialBenefitTable');
   if (specialBenefitEl) {
     var contribAppliedTotal = personNames.length ? combinedApplied : 0;
-    var imputedEstate = Math.max(0, net + giftTotal - contribAppliedTotal);
+    var giftTotalForImputed = cc2Gifts.filter(function(g) { return g.type !== 'bequest'; })
+      .reduce(function(sum, g) { return sum + Math.max(0, g.amount - cc2GiftAppliedExclude(g)); }, 0);
+    var imputedEstate = Math.max(0, net + giftTotalForImputed - contribAppliedTotal);
     var sbRows = hs.map(function(h) {
       var firstAllocation = imputedEstate * h.share + (personNames.length ? (combinedAppliedByName[h.name] || 0) : 0);
       var benefit = cc2Gifts.filter(function(g) { return g.person === h.name; })
         .reduce(function(sum, g) { return sum + Math.max(0, g.amount - cc2GiftAppliedExclude(g)); }, 0);
       var finalShare = Math.max(0, firstAllocation - benefit);
       var excess = benefit > firstAllocation;
-      return '<tr><td>' + h.name + '</td><td>' + cc2Won(firstAllocation) + '</td><td>' + cc2Won(benefit) + '</td><td>' + cc2Won(finalShare) + (excess ? ' <span style="color:#c0392b; font-weight:700;">(초과수익)</span>' : '') + '</td></tr>';
+      // 유증은 간주상속재산에 다시 더하지 않고 본인 몫에서만 빼므로, "구체적 상속분" 열만 보면
+      // 유증 수령자의 실제 총취득액이 누락돼 보인다 — 총귀속액(= 구체적 상속분 + 유증)을 별도 표시.
+      var bequestReceived = cc2Gifts.filter(function(g) { return g.person === h.name && g.type === 'bequest'; })
+        .reduce(function(sum, g) { return sum + g.amount; }, 0);
+      var totalReceived = finalShare + bequestReceived;
+      return '<tr><td>' + h.name + '</td><td>' + cc2Won(firstAllocation) + '</td><td>' + cc2Won(benefit) + '</td><td>' + cc2Won(finalShare) + (excess ? ' <span style="color:#c0392b; font-weight:700;">(초과수익)</span>' : '') + '</td><td>' + cc2Won(bequestReceived) + '</td><td>' + cc2Won(totalReceived) + '</td></tr>';
     }).join('');
-    specialBenefitEl.innerHTML = '<tr><th>상속인</th><th>간주상속재산 기준 1차 배분액</th><th>받은 특별수익(증여+유증, 보상 인정분 제외)</th><th>특별수익 반영 구체적 상속분(참고)</th></tr>' + sbRows;
+    specialBenefitEl.innerHTML = '<tr><th>상속인</th><th>간주상속재산 기준 1차 배분액</th><th>받은 특별수익(증여+유증, 보상 인정분 제외)</th><th>특별수익 반영 구체적 상속분(참고)</th><th>유증으로 받은 금액</th><th>총귀속액(구체적 상속분+유증, 참고)</th></tr>' + sbRows;
   }
 
   // ── ② 보상적 증여 제외 시나리오 (증여 항목별) ── 3번에서 "예"/"판단 필요"로
@@ -640,7 +658,7 @@ window.cc2Calc = function() {
   else msg += '· 아직 4번 "기여분 입력"에 기록된 내용이 없습니다.<br>';
   if (judgedGifts.length) msg += '· 3번에서 보상적 증여로 표시하신 증여 항목을 반영하면, 유류분 산정 기초재산에서 참고용으로 ' + cc2Won(combinedGiftExclude) + '이 제외됩니다.<br>';
   else msg += '· 아직 3번에 보상적 증여로 표시된 증여 항목이 없습니다.<br>';
-  msg += '· 대법원 2026. 5. 29. 선고 2024다208261 판결은 보상적 증여·유증을 기여에 상응하는 범위에서 유류분 산정 기초재산에서도 제외하는 구조를 확인했습니다. 이 조항은 2024년 4월 25일 이후 개시된 상속에 한해 적용됩니다(민법 부칙 2026.3.17. 제2조).<br>';
+  msg += '· 대법원 2026. 5. 29. 선고 2024다208261 판결은 보상적 증여·유증을 기여에 상응하는 범위에서 유류분 산정 기초재산에서도 제외하는 구조를 확인했습니다. 이 조항은 원칙적으로 2024년 4월 25일 이후 개시된 상속에 적용되나(민법 부칙 2026.3.17. 제2조), 같은 판결은 그 이전에 개시된 상속이라도 2024.4.25 헌법불합치결정 당시 법원에 재판이 계속 중이었다면 소급효가 미쳐 신법이 적용된다고 보았으므로, 상속개시일만으로 적용 여부를 단정할 수 없습니다.<br>';
   msg += '· <strong>이 계산기가 다루지 않는 것:</strong> 입력한 증여의 시기(민법 제1114조의 산입 기간)는 계산에 반영하지 않고 모두 산입합니다. 유류분 반환청구권은 상속개시와 반환할 증여·유증을 안 때부터 1년, 상속개시 후 10년이면 소멸하며(제1117조), 가액 지급을 청구한 날부터 이자가 붙습니다(제1115조 제1항, 2026.3.17. 이후 개시된 상속). 기여분은 상속재산에서 유증을 뺀 액을 넘지 못하나(제1008조의2 제3항) 유증을 따로 입력받지 않아 순상속재산을 한도로 봅니다.<br>';
   msg += '· <strong>실무 체크:</strong> 동거·간호 기간, 병원·간병비, 재산관리 내역, 증여계약서, 피상속인의 의사 및 기여와 증여의 상응관계를 확보하세요.';
   document.getElementById('cc2-report').innerHTML = msg;
@@ -725,9 +743,60 @@ t('간주상속재산 수정: 기여분(자녀2, 2억 인정)이 섞여도 구�
   assert.equal(child2Final, 800_000_000);
   assert.equal(child1Final + child2Final, net);
 });
-t('소스 코드에 간주상속재산(imputedEstate = net + giftTotal - 기여분) 계산이 존재',()=>{
-  assert(s.includes('var imputedEstate = Math.max(0, net + giftTotal - contribAppliedTotal);'));
+t('소스 코드에 간주상속재산(imputedEstate = net + giftTotalForImputed - 기여분) 계산이 존재',()=>{
+  assert(s.includes('var imputedEstate = Math.max(0, net + giftTotalForImputed - contribAppliedTotal);'));
   assert(s.includes('var firstAllocation = imputedEstate * h.share + (personNames.length ? (combinedAppliedByName[h.name] || 0) : 0);'));
+});
+
+// --- 2026-11-07(2차) 버그 수정 회귀: 보상적 증여로 전액 인정된 생전증여는 간주상속재산에
+// 더하면 안 됨(외부 검토[HEPS Intelligence]로 발견). 상속 10억·자녀2명·자녀1 생전증여 4억 전액
+// 보상 인정 시, 수정 전에는 7억/7억(합계 14억, 4억 과다 계상)이었음. ---
+t('간주상속재산 2차 수정: 생전증여 전액이 보상적 증여로 인정되면 간주상속재산에 더하지 않음(합계 10억 유지)',()=>{
+  const net = 1_000_000_000, contribAppliedTotal = 0;
+  const g = { qual: 'yes', exclude: 400_000_000, amount: 400_000_000, evidence: 3, type: 'gift', person: '자녀1' };
+  const applied = g.evidence === 3 ? Math.min(g.exclude, g.amount) * 1.0 : 0; // cc2GiftAppliedExclude 재현
+  const giftTotalForImputed = Math.max(0, g.amount - applied); // = 0
+  const imputedEstate = Math.max(0, net + giftTotalForImputed - contribAppliedTotal); // = 10억
+  const share = 0.5;
+  const child1FirstAllocation = imputedEstate * share;
+  const child2FirstAllocation = imputedEstate * share;
+  const benefit1 = Math.max(0, g.amount - applied); // = 0 (전액 보상 인정)
+  const child1Final = Math.max(0, child1FirstAllocation - benefit1);
+  const child2Final = Math.max(0, child2FirstAllocation - 0);
+  assert.equal(child1Final, 500_000_000);
+  assert.equal(child2Final, 500_000_000);
+  assert.equal(child1Final + child2Final, net);
+});
+t('소스 코드에 giftTotalForImputed(보상 인정분 제외한 생전증여만 간주상속재산에 가산) 계산이 존재',()=>{
+  assert(s.includes("var giftTotalForImputed = cc2Gifts.filter(function(g) { return g.type !== 'bequest'; })"));
+});
+
+// --- 2026-11-07(2차) 개선: 유증 수령자의 총귀속액(= 구체적 상속분 + 유증) 표시 ---
+t('간주상속재산 2차 수정: 유증 수령자도 총귀속액(구체적 상속분+유증) 합계가 순상속재산과 일치',()=>{
+  const net = 1_000_000_000, giftTotalForImputed = 0, contribAppliedTotal = 0;
+  const imputedEstate = Math.max(0, net + giftTotalForImputed - contribAppliedTotal); // 10억(유증은 가산 안 함)
+  const share = 0.5;
+  const child1FirstAllocation = imputedEstate * share; // 5억
+  const child2FirstAllocation = imputedEstate * share; // 5억
+  const bequest1 = 200_000_000;
+  const benefit1 = bequest1; // qual='no' 기본값이면 cc2GiftAppliedExclude=0이라 benefit = amount 그대로
+  const child1Final = Math.max(0, child1FirstAllocation - benefit1); // 3억
+  const child2Final = Math.max(0, child2FirstAllocation - 0); // 5억
+  const child1Total = child1Final + bequest1; // 5억
+  const child2Total = child2Final + 0; // 5억
+  assert.equal(child1Final, 300_000_000);
+  assert.equal(child1Total, 500_000_000);
+  assert.equal(child1Total + child2Total, net);
+});
+t('소스 코드에 유증 수령액·총귀속액 열 계산이 존재',()=>{
+  assert(s.includes("var bequestReceived = cc2Gifts.filter(function(g) { return g.person === h.name && g.type === 'bequest'; })"));
+  assert(s.includes('var totalReceived = finalShare + bequestReceived;'));
+  assert(s.includes('id="cc2-specialBenefitTable"'));
+});
+
+// --- 대법원 2024다208261 적용시점 안내 보완 검증(외부 검토 — 판결문 원문 대조로 발견) ---
+t('2024.4.25 이전 개시 상속도 소송 계속 중이었다면 적용될 수 있다는 안내가 존재(대법원 2024다208261 소급효)',()=>{
+  assert(s.includes('헌법불합치결정 당시 법원에 재판이 계속 중이었다면'));
 });
 
 console.log(n+' passed');
