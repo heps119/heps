@@ -8443,7 +8443,7 @@ if (foot) foot.style.display = 'none';
       <div class="pen-field">
         <label>연금저축·IRP 연간 납입액(만원)</label>
         <input type="text" inputmode="numeric" id="pen-pension-contribution" class="pen-comma-input" placeholder="예: 900">
-        <span class="pen-field-hint">지금 매년 <strong>넣고 계신</strong> 금액입니다(세액공제 계산은 이 값을 씁니다). 900만원 한도.</span>
+        <span class="pen-field-hint">지금 매년 <strong>넣고 계신</strong> 금액입니다(세액공제 계산은 이 값을 씁니다). 합산 900만원 한도이며, <strong>연금저축만</strong> 넣으시면 600만원까지만 공제됩니다(소득세법 §59의3①).</span>
       </div>
       <div class="pen-field">
         <label>근로소득(연, 만원)</label>
@@ -19579,9 +19579,9 @@ taxCreditHtml =
 '<div style="padding:1rem 1.1rem; background:#eaf6ee; border-radius:8px; margin-bottom:0.8rem;">' +
 '<div style="font-size:0.85rem; color:#1e5c33; font-weight:700; margin-bottom:0.3rem;">💰 연간 세액공제 예상액</div>' +
 '<div style="font-size:1.3rem; font-weight:800; color:#1e5c33;">' + creditAmount.toLocaleString('ko-KR') + '만원</div>' +
-'<div style="font-size:0.78rem; color:#4a7a58; margin-top:0.3rem;">연금저축·IRP 연간 납입액 ' + pensionContribution.toLocaleString('ko-KR') + '만원 중 세액공제 한도(900만원) 이내 ' + creditBase.toLocaleString('ko-KR') + '만원 × ' + (creditRate*100).toFixed(1) + '%로 추정<br>적용 구간: ' + bracketLabel + '</div>' +
+'<div style="font-size:0.78rem; color:#4a7a58; margin-top:0.3rem;">연금저축·IRP 연간 납입액 ' + pensionContribution.toLocaleString('ko-KR') + '만원 중 세액공제 한도(연금저축+IRP 합산 900만원; 연금저축만이면 600만원) 이내 ' + creditBase.toLocaleString('ko-KR') + '만원 × ' + (creditRate*100).toFixed(1) + '%로 추정<br>적용 구간: ' + bracketLabel + '<br>※ 연금저축계좌분은 600만원까지만 인정되므로 연금저축만 납입하시면 공제액이 더 작습니다. 또한 공제액은 종합소득 산출세액을 넘지 못합니다.</div>' +
 '<div style="font-size:0.72rem; color:#6a9478; margin-top:0.5rem; padding-top:0.5rem; border-top:1px dashed #cfe3d5; line-height:1.7;">' +
-'📖 근거: 소득세법 제59조의3 제1항은 종합소득이 있는 거주자가 연금계좌에 납입한 금액 중 일정액을 그 과세기간의 종합소득 산출세액에서 공제하도록 정하고 있습니다. 구체적인 공제율(소득 기준별 차등)은 법률이 아니라 같은 법 시행령에 위임되어 있으며, 그 기준에 따라 종합소득금액 4,500만원(근로소득만 있으면 총급여 5,500만원) 이하는 15%(지방소득세 포함 16.5%), 초과는 12%(지방소득세 포함 13.2%)가 적용됩니다.' +
+'📖 근거: 소득세법 제59조의3 제1항은 종합소득이 있는 거주자가 연금계좌에 납입한 금액 중 일정액을 그 과세기간의 종합소득 산출세액에서 공제하도록 정하고 있습니다. 공제율은 같은 항 본문에 직접 규정되어 있으며(2023.1.1 이후 적용 문구), 종합소득금액 4,500만원(근로소득만 있으면 총급여 5,500만원) 이하는 15%(지방소득세 포함 16.5%), 초과는 12%(지방소득세 포함 13.2%)가 적용됩니다.' +
 '</div>' +
 '</div>';
 }
