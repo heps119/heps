@@ -74,8 +74,8 @@ t('간주상속재산 수정: 기여분(자녀2, 2억 인정)이 섞여도 구�
   assert.equal(child2Final, 800_000_000);
   assert.equal(child1Final + child2Final, net);
 });
-t('소스 코드에 간주상속재산(imputedEstate = net + giftTotalForImputed - 기여분) 계산이 존재',()=>{
-  assert(s.includes('var imputedEstate = Math.max(0, net + giftTotalForImputed - contribAppliedTotal);'));
+t('소스 코드에 간주상속재산(imputedEstate = net + giftTotalForImputed - 기여분 - 보상인정유증) 계산이 존재',()=>{
+  assert(s.includes('var imputedEstate = Math.max(0, net + giftTotalForImputed - contribAppliedTotal - bequestAppliedTotal);'));
   assert(s.includes('var firstAllocation = imputedEstate * h.share + (personNames.length ? (combinedAppliedByName[h.name] || 0) : 0);'));
 });
 
@@ -128,6 +128,51 @@ t('소스 코드에 유증 수령액·총귀속액 열 계산이 존재',()=>{
 // --- 대법원 2024다208261 적용시점 안내 보완 검증(외부 검토 — 판결문 원문 대조로 발견) ---
 t('2024.4.25 이전 개시 상속도 소송 계속 중이었다면 적용될 수 있다는 안내가 존재(대법원 2024다208261 소급효)',()=>{
   assert(s.includes('헌법불합치결정 당시 법원에 재판이 계속 중이었다면'));
+});
+
+// --- 2026-11-07(3차) 버그 수정 회귀: 보상으로 인정된 "유증"도 간주상속재산에서 빼야 함
+// (지적해 주신 사례로 발견). 상속 10억·자녀2명·자녀1 유증 2억 전액 보상 인정 시, 수정 전에는
+// 총귀속액 7억/5억(합계 12억, 2억 과다 계상)이었음. ---
+t('간주상속재산 3차 수정: 유증 전액이 보상적 증여로 인정되면 간주상속재산에서도 빼서 합계 10억 유지',()=>{
+  const net = 1_000_000_000, giftTotalForImputed = 0, contribAppliedTotal = 0;
+  const g = { qual: 'yes', exclude: 200_000_000, amount: 200_000_000, evidence: 3, type: 'bequest', person: '자녀1' };
+  const applied = g.evidence === 3 ? Math.min(g.exclude, g.amount) * 1.0 : 0; // cc2GiftAppliedExclude 재현
+  const bequestAppliedTotal = applied; // = 2억
+  const imputedEstate = Math.max(0, net + giftTotalForImputed - contribAppliedTotal - bequestAppliedTotal); // = 8억
+  const share = 0.5;
+  const child1FirstAllocation = imputedEstate * share; // 4억
+  const child2FirstAllocation = imputedEstate * share; // 4억
+  const benefit1 = Math.max(0, g.amount - applied); // = 0 (전액 보상 인정)
+  const child1Final = Math.max(0, child1FirstAllocation - benefit1); // 4억
+  const child2Final = Math.max(0, child2FirstAllocation - 0); // 4억
+  const bequest1 = g.amount; // 2억
+  const child1Total = child1Final + bequest1; // 6억
+  const child2Total = child2Final + 0; // 4억
+  assert.equal(child1Total, 600_000_000);
+  assert.equal(child2Total, 400_000_000);
+  assert.equal(child1Total + child2Total, net);
+});
+t('간주상속재산 3차 수정: 유증이 절반(50%)만 보상 인정돼도 총귀속액 합계는 순상속재산과 일치',()=>{
+  const net = 1_000_000_000, giftTotalForImputed = 0, contribAppliedTotal = 0;
+  const g = { qual: 'yes', exclude: 200_000_000, amount: 200_000_000, evidence: 2, type: 'bequest', person: '자녀1' };
+  const applied = Math.min(g.exclude, g.amount) * 0.5; // evidence=2(보통) → 50% 인정, = 1억
+  const bequestAppliedTotal = applied;
+  const imputedEstate = Math.max(0, net + giftTotalForImputed - contribAppliedTotal - bequestAppliedTotal); // 9억
+  const share = 0.5;
+  const child1FirstAllocation = imputedEstate * share; // 4.5억
+  const child2FirstAllocation = imputedEstate * share; // 4.5억
+  const benefit1 = Math.max(0, g.amount - applied); // 1억
+  const child1Final = Math.max(0, child1FirstAllocation - benefit1); // 3.5억
+  const child2Final = Math.max(0, child2FirstAllocation - 0); // 4.5억
+  const child1Total = child1Final + g.amount; // 5.5억
+  const child2Total = child2Final + 0; // 4.5억
+  assert.equal(child1Total, 550_000_000);
+  assert.equal(child2Total, 450_000_000);
+  assert.equal(child1Total + child2Total, net);
+});
+t('소스 코드에 bequestAppliedTotal(보상 인정된 유증을 간주상속재산에서 제외) 계산이 존재',()=>{
+  assert(s.includes("var bequestAppliedTotal = cc2Gifts.filter(function(g) { return g.type === 'bequest'; })"));
+  assert(s.includes('var imputedEstate = Math.max(0, net + giftTotalForImputed - contribAppliedTotal - bequestAppliedTotal);'));
 });
 
 console.log(n+' passed');

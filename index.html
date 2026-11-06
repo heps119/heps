@@ -8156,7 +8156,7 @@ if (foot) foot.style.display = 'none';
       <h4 style="margin-top:1rem;">종합 참고 추정 기준 구체적 상속분표</h4>
       <div style="overflow-x:auto;"><table class="pen-compare-table" id="cc2-combinedHeirTable"><tr><th>상속인</th><th>법정상속지분</th><th>기여분 미반영 구체적 상속분</th><th>종합 참고 추정 반영 후</th></tr></table></div>
       <h4 style="margin-top:1rem;">특별수익(증여·유증) 반영 구체적 상속분표 <span style="font-size:0.72rem; color:#999; font-weight:400;">(민법 제1008조)</span></h4>
-      <div class="pen-field-hint" style="margin-bottom:0.6rem;">순상속재산에 생전증여 중 특별수익으로 남는 부분(기여에 대한 보상으로 인정된 부분은 제외)을 더하고 인정 기여분 합계를 뺀 "간주상속재산"을 법정상속분으로 나눈 뒤(유증은 "2. 현재 상속재산"에 이미 포함돼 있어 간주상속재산에는 다시 더하지 않습니다), 기여자에게는 인정 기여분을 더하고 각자가 3번에서 입력한 증여·유증(특별수익)을 공제합니다. 기여에 대한 보상으로 인정된 부분(3번에서 "예"/"판단 필요"로 표시하고 보상액을 주장한 부분)은 특별수익에서도 같은 비율로 제외됩니다(민법 제1008조 단서). 특별수익이 1차 배분액보다 많으면(초과특별수익자) 그 사람의 구체적 상속분은 0으로 표시되며, 초과분을 다른 상속인에게 재분배하는 방법(초과특별수익자 조정)은 이 계산기가 반영하지 않으므로 실제 사건에서는 전문가와 상담하세요. 유증을 받은 상속인은 "구체적 상속분"만으로는 실제 총취득액이 드러나지 않으므로, 맨 오른쪽 "총귀속액" 열(구체적 상속분+유증)을 함께 보세요.</div>
+      <div class="pen-field-hint" style="margin-bottom:0.6rem;">순상속재산에 생전증여 중 특별수익으로 남는 부분(기여에 대한 보상으로 인정된 부분은 제외)을 더하고, 유증 중 보상으로 인정된 부분과 인정 기여분 합계를 뺀 "간주상속재산"을 법정상속분으로 나눈 뒤(유증 자체는 "2. 현재 상속재산"에 이미 포함돼 있어 간주상속재산에 다시 더하지는 않지만, 그중 보상 인정분은 법정상속분대로 나눠지는 공통 풀이 아니라 그 상속인에게 콕 찍어 귀속되는 몫이므로 공통 풀에서 빼야 합니다), 기여자에게는 인정 기여분을 더하고 각자가 3번에서 입력한 증여·유증(특별수익)을 공제합니다. 기여에 대한 보상으로 인정된 부분(3번에서 "예"/"판단 필요"로 표시하고 보상액을 주장한 부분)은 특별수익에서도 같은 비율로 제외됩니다(민법 제1008조 단서). 특별수익이 1차 배분액보다 많으면(초과특별수익자) 그 사람의 구체적 상속분은 0으로 표시되며, 초과분을 다른 상속인에게 재분배하는 방법(초과특별수익자 조정)은 이 계산기가 반영하지 않으므로 실제 사건에서는 전문가와 상담하세요. 유증을 받은 상속인은 "구체적 상속분"만으로는 실제 총취득액이 드러나지 않으므로, 맨 오른쪽 "총귀속액" 열(구체적 상속분+유증)을 함께 보세요.</div>
       <div style="overflow-x:auto;"><table class="pen-compare-table" id="cc2-specialBenefitTable"><tr><th>상속인</th><th>간주상속재산 기준 1차 배분액</th><th>받은 특별수익(증여+유증, 보상 인정분 제외)</th><th>특별수익 반영 구체적 상속분(참고)</th><th>유증으로 받은 금액</th><th>총귀속액(구체적 상속분+유증, 참고)</th></tr></table></div>
     </div>
 
@@ -19906,22 +19906,28 @@ window.cc2Calc = function() {
   }
 
   // ── 특별수익(증여·유증) 반영 구체적 상속분 — 민법 §1008 ──
-  // 간주상속재산(= 순상속재산 + "특별수익으로 남는" 생전증여 − 인정 기여분 합계)을 법정상속분으로
-  // 나눈 뒤, 기여자에게는 인정 기여분을 더하고, 각자가 받은 특별수익(생전증여+유증)을 공제한다.
-  // 기여에 대한 보상으로 인정된 부분(cc2GiftAppliedExclude)은 §1008 단서에 따라 "특별수익에서"
-  // 제외되므로, 간주상속재산에 더할 때도 그 인정분만큼은 빼고 더한다(그 돈은 기여에 대한 정당한
-  // 대가이지 상속분의 선지급이 아니므로 공통 풀을 부풀리면 안 됨 — 2026-11-07 외부 검토로 발견한
-  // 버그: 이전 버전은 생전증여 전액을 그대로 간주상속재산에 더해, 보상 인정분만큼 상속인들의
-  // 구체적 상속분 합계가 순상속재산을 초과하는 오류가 있었음). 유증은 "2. 현재 상속재산"에 이미
-  // 포함돼 있어 간주상속재산에는 더하지 않고 본인 몫에서만 뺀다. 특별수익이 1차 배분액을
-  // 초과하면(초과특별수익자) §1008 본문에 따라 구체적 상속분은 0으로 하고, 초과분의
-  // 재분배(초과특별수익자 조정)는 반영하지 않는다.
+  // 간주상속재산(= 순상속재산 + "특별수익으로 남는" 생전증여 − 보상 인정된 유증 − 인정 기여분
+  // 합계)을 법정상속분으로 나눈 뒤, 기여자에게는 인정 기여분을 더하고, 각자가 받은 특별수익
+  // (생전증여+유증)을 공제한다. 기여에 대한 보상으로 인정된 부분(cc2GiftAppliedExclude)은
+  // §1008 단서에 따라 "특별수익에서" 제외되므로, 간주상속재산에 더할 때도 그 인정분만큼은
+  // 빼고 더한다(그 돈은 기여에 대한 정당한 대가이지 상속분의 선지급이 아니므로 공통 풀을
+  // 부풀리면 안 됨 — 2026-11-07 외부 검토로 발견한 버그: 이전 버전은 생전증여 전액을 그대로
+  // 간주상속재산에 더해, 보상 인정분만큼 상속인들의 구체적 상속분 합계가 순상속재산을
+  // 초과하는 오류가 있었음). 유증은 "2. 현재 상속재산"에 이미 포함돼 있어 간주상속재산에
+  // 다시 더하지 않고 본인 몫에서만 빼지만, 그중 보상 인정분은 법정상속분대로 나눠지는 공통
+  // 풀이 아니라 그 상속인에게 콕 찍어 귀속되는 몫이므로 공통 풀(간주상속재산)에서는 빼야
+  // 한다(2026-11-07 3차 수정 — 외부 검토로 발견: 이전 버전은 보상 인정 유증을 간주상속재산
+  // 에서 빼지 않아, 그 인정분만큼 총귀속액 합계가 순상속재산을 다시 초과하는 오류가 있었음).
+  // 특별수익이 1차 배분액을 초과하면(초과특별수익자) §1008 본문에 따라 구체적 상속분은
+  // 0으로 하고, 초과분의 재분배(초과특별수익자 조정)는 반영하지 않는다.
   var specialBenefitEl = document.getElementById('cc2-specialBenefitTable');
   if (specialBenefitEl) {
     var contribAppliedTotal = personNames.length ? combinedApplied : 0;
     var giftTotalForImputed = cc2Gifts.filter(function(g) { return g.type !== 'bequest'; })
       .reduce(function(sum, g) { return sum + Math.max(0, g.amount - cc2GiftAppliedExclude(g)); }, 0);
-    var imputedEstate = Math.max(0, net + giftTotalForImputed - contribAppliedTotal);
+    var bequestAppliedTotal = cc2Gifts.filter(function(g) { return g.type === 'bequest'; })
+      .reduce(function(sum, g) { return sum + cc2GiftAppliedExclude(g); }, 0);
+    var imputedEstate = Math.max(0, net + giftTotalForImputed - contribAppliedTotal - bequestAppliedTotal);
     var sbRows = hs.map(function(h) {
       var firstAllocation = imputedEstate * h.share + (personNames.length ? (combinedAppliedByName[h.name] || 0) : 0);
       var benefit = cc2Gifts.filter(function(g) { return g.person === h.name; })
