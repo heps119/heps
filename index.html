@@ -8156,8 +8156,8 @@ if (foot) foot.style.display = 'none';
       <h4 style="margin-top:1rem;">종합 참고 추정 기준 구체적 상속분표</h4>
       <div style="overflow-x:auto;"><table class="pen-compare-table" id="cc2-combinedHeirTable"><tr><th>상속인</th><th>법정상속지분</th><th>기여분 미반영 구체적 상속분</th><th>종합 참고 추정 반영 후</th></tr></table></div>
       <h4 style="margin-top:1rem;">특별수익(증여·유증) 반영 구체적 상속분표 <span style="font-size:0.72rem; color:#999; font-weight:400;">(민법 제1008조)</span></h4>
-      <div class="pen-field-hint" style="margin-bottom:0.6rem;">위 1차 배분액(기여분 반영분, 기여 기록이 없으면 법정상속분 그대로)에서 각자가 3번에서 입력한 증여·유증(특별수익)을 공제합니다. 기여에 대한 보상으로 인정된 부분(3번에서 "예"/"판단 필요"로 표시하고 보상액을 주장한 부분)은 특별수익에서도 같은 비율로 제외됩니다(민법 제1008조 단서). 특별수익이 1차 배분액보다 많으면(초과특별수익자) 그 사람의 구체적 상속분은 0으로 표시되며, 초과분을 다른 상속인에게 재분배하는 방법(초과특별수익자 조정)은 이 계산기가 반영하지 않으므로 실제 사건에서는 전문가와 상담하세요.</div>
-      <div style="overflow-x:auto;"><table class="pen-compare-table" id="cc2-specialBenefitTable"><tr><th>상속인</th><th>기여분 반영 1차 배분액</th><th>받은 특별수익(증여+유증, 보상 인정분 제외)</th><th>특별수익 반영 구체적 상속분(참고)</th></tr></table></div>
+      <div class="pen-field-hint" style="margin-bottom:0.6rem;">순상속재산에 생전증여 총액을 더하고 인정 기여분 합계를 뺀 "간주상속재산"을 법정상속분으로 나눈 뒤(유증은 "2. 현재 상속재산"에 이미 포함돼 있어 간주상속재산에는 다시 더하지 않습니다), 기여자에게는 인정 기여분을 더하고 각자가 3번에서 입력한 증여·유증(특별수익)을 공제합니다. 기여에 대한 보상으로 인정된 부분(3번에서 "예"/"판단 필요"로 표시하고 보상액을 주장한 부분)은 특별수익에서도 같은 비율로 제외됩니다(민법 제1008조 단서). 특별수익이 1차 배분액보다 많으면(초과특별수익자) 그 사람의 구체적 상속분은 0으로 표시되며, 초과분을 다른 상속인에게 재분배하는 방법(초과특별수익자 조정)은 이 계산기가 반영하지 않으므로 실제 사건에서는 전문가와 상담하세요.</div>
+      <div style="overflow-x:auto;"><table class="pen-compare-table" id="cc2-specialBenefitTable"><tr><th>상속인</th><th>간주상속재산 기준 1차 배분액</th><th>받은 특별수익(증여+유증, 보상 인정분 제외)</th><th>특별수익 반영 구체적 상속분(참고)</th></tr></table></div>
     </div>
 
     <div class="pen-instrument-card" style="grid-column:1/-1;">
@@ -19906,21 +19906,27 @@ window.cc2Calc = function() {
   }
 
   // ── 특별수익(증여·유증) 반영 구체적 상속분 — 민법 §1008 ──
-  // 위에서 계산한 기여분 반영 1차 배분액(기여 기록이 없으면 법정상속분 그대로)에서, 각자가
-  // 받은 특별수익(생전증여+유증)을 공제한다. 기여에 대한 보상으로 인정된 부분(cc2GiftAppliedExclude)은
-  // §1008 단서에 따라 특별수익에서도 제외한다. 특별수익이 1차 배분액을 초과하면(초과특별수익자)
-  // §1008 본문에 따라 구체적 상속분은 0으로 하고, 초과분의 재분배(초과특별수익자 조정)는 반영하지 않는다.
+  // 간주상속재산(= 순상속재산 + 생전증여 총액 − 인정 기여분 합계)을 법정상속분으로 나눈 뒤,
+  // 기여자에게는 인정 기여분을 더하고, 각자가 받은 특별수익(생전증여+유증)을 공제한다. 유증은
+  // "2. 현재 상속재산"에 이미 포함돼 있어 간주상속재산에는 다시 더하지 않고 본인 몫에서만 뺀다.
+  // 기여에 대한 보상으로 인정된 부분(cc2GiftAppliedExclude)은 §1008 단서에 따라 특별수익에서도
+  // 제외한다. 특별수익이 1차 배분액을 초과하면(초과특별수익자) §1008 본문에 따라 구체적 상속분은
+  // 0으로 하고, 초과분의 재분배(초과특별수익자 조정)는 반영하지 않는다.
+  // (2026-11-07 수정: 이전 버전은 생전증여를 간주상속재산에 합산하지 않아 상속인들의 구체적
+  // 상속분 합계가 순상속재산보다 작아지는 오류가 있었음 — 외부 검토로 발견, imputedEstate로 수정)
   var specialBenefitEl = document.getElementById('cc2-specialBenefitTable');
   if (specialBenefitEl) {
+    var contribAppliedTotal = personNames.length ? combinedApplied : 0;
+    var imputedEstate = Math.max(0, net + giftTotal - contribAppliedTotal);
     var sbRows = hs.map(function(h) {
-      var firstAllocation = personNames.length ? (adjEstateCombined * h.share + (combinedAppliedByName[h.name] || 0)) : (net * h.share);
+      var firstAllocation = imputedEstate * h.share + (personNames.length ? (combinedAppliedByName[h.name] || 0) : 0);
       var benefit = cc2Gifts.filter(function(g) { return g.person === h.name; })
         .reduce(function(sum, g) { return sum + Math.max(0, g.amount - cc2GiftAppliedExclude(g)); }, 0);
       var finalShare = Math.max(0, firstAllocation - benefit);
       var excess = benefit > firstAllocation;
       return '<tr><td>' + h.name + '</td><td>' + cc2Won(firstAllocation) + '</td><td>' + cc2Won(benefit) + '</td><td>' + cc2Won(finalShare) + (excess ? ' <span style="color:#c0392b; font-weight:700;">(초과수익)</span>' : '') + '</td></tr>';
     }).join('');
-    specialBenefitEl.innerHTML = '<tr><th>상속인</th><th>기여분 반영 1차 배분액</th><th>받은 특별수익(증여+유증, 보상 인정분 제외)</th><th>특별수익 반영 구체적 상속분(참고)</th></tr>' + sbRows;
+    specialBenefitEl.innerHTML = '<tr><th>상속인</th><th>간주상속재산 기준 1차 배분액</th><th>받은 특별수익(증여+유증, 보상 인정분 제외)</th><th>특별수익 반영 구체적 상속분(참고)</th></tr>' + sbRows;
   }
 
   // ── ② 보상적 증여 제외 시나리오 (증여 항목별) ── 3번에서 "예"/"판단 필요"로
