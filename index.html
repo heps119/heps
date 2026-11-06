@@ -7751,10 +7751,14 @@ if (foot) foot.style.display = 'none';
         </div>
         <div class="calc-field calc-input-field">
           <label>가업상속공제</label>
-          <p class="hint">가업 상속 해당 시 입력 (최대 600억)</p>
+          <p class="hint">가업 상속 해당 시 입력. 피상속인의 계속경영기간에 따라 공제한도가 자동 적용됩니다(10년 이상 20년 미만 300억·20년 이상 30년 미만 400억·30년 이상 600억, 상증법 제18조의2제1항). 10년 미만이면 가업상속공제 요건(같은 조 ①, '가업'의 정의상 피상속인이 10년 이상 계속경영) 자체를 충족하지 못해 공제가 적용되지 않습니다.</p>
           <div class="calc-input-wrap">
             <input type="text" id="c_business" inputmode="numeric">
             <span class="unit">천원</span>
+          </div>
+          <div class="calc-input-wrap" style="margin-top:0.6rem;">
+            <input type="text" id="c_business_years" inputmode="numeric" placeholder="예: 15">
+            <span class="unit">년(계속경영기간)</span>
           </div>
         </div>
         <div class="calc-field calc-input-field">
@@ -8041,6 +8045,10 @@ if (foot) foot.style.display = 'none';
         <div class="pen-field"><label>증여·유증 가액(원)</label><input type="text" inputmode="numeric" class="pen-comma-input" id="cc2-giftAmount" value="0"></div>
       </div>
       <div class="pen-field-row">
+        <div class="pen-field"><label>구분</label><select id="cc2-giftType"><option value="gift" selected>생전 증여(사전증여)</option><option value="bequest">유증(유언으로 남길 재산)</option></select></div>
+        <div class="pen-field" style="display:flex; align-items:flex-end;"><p class="pen-field-hint" style="margin:0;">유증은 "2. 현재 상속재산"에 이미 포함된 재산을 누구에게 줄지 정하는 것이라 유류분 산정 기초재산에 다시 더하지 않습니다. 생전 증여만 기초재산에 가산됩니다(민법 §1113①). 다만 특별수익으로서 구체적 상속분에서 공제되는 것은 증여·유증 모두 같습니다(§1008).</p></div>
+      </div>
+      <div class="pen-field-row">
         <div class="pen-field"><label>증여·유증일</label><input type="date" id="cc2-giftDate"></div>
         <div class="pen-field"><label>메모</label><input type="text" id="cc2-giftMemo" placeholder="예: 7년 동거·간병에 대한 보상으로 증여"></div>
       </div>
@@ -8147,6 +8155,9 @@ if (foot) foot.style.display = 'none';
       <div id="cc2-combinedProcess" style="margin-bottom:1rem;"></div>
       <h4 style="margin-top:1rem;">종합 참고 추정 기준 구체적 상속분표</h4>
       <div style="overflow-x:auto;"><table class="pen-compare-table" id="cc2-combinedHeirTable"><tr><th>상속인</th><th>법정상속지분</th><th>기여분 미반영 구체적 상속분</th><th>종합 참고 추정 반영 후</th></tr></table></div>
+      <h4 style="margin-top:1rem;">특별수익(증여·유증) 반영 구체적 상속분표 <span style="font-size:0.72rem; color:#999; font-weight:400;">(민법 제1008조)</span></h4>
+      <div class="pen-field-hint" style="margin-bottom:0.6rem;">위 1차 배분액(기여분 반영분, 기여 기록이 없으면 법정상속분 그대로)에서 각자가 3번에서 입력한 증여·유증(특별수익)을 공제합니다. 기여에 대한 보상으로 인정된 부분(3번에서 "예"/"판단 필요"로 표시하고 보상액을 주장한 부분)은 특별수익에서도 같은 비율로 제외됩니다(민법 제1008조 단서). 특별수익이 1차 배분액보다 많으면(초과특별수익자) 그 사람의 구체적 상속분은 0으로 표시되며, 초과분을 다른 상속인에게 재분배하는 방법(초과특별수익자 조정)은 이 계산기가 반영하지 않으므로 실제 사건에서는 전문가와 상담하세요.</div>
+      <div style="overflow-x:auto;"><table class="pen-compare-table" id="cc2-specialBenefitTable"><tr><th>상속인</th><th>기여분 반영 1차 배분액</th><th>받은 특별수익(증여+유증, 보상 인정분 제외)</th><th>특별수익 반영 구체적 상속분(참고)</th></tr></table></div>
     </div>
 
     <div class="pen-instrument-card" style="grid-column:1/-1;">
@@ -8290,10 +8301,16 @@ if (foot) foot.style.display = 'none';
     <div>
       <div class="pen-instrument-card">
         <h4>③ 주택 판정 정보</h4>
+        <p class="pen-field-hint" style="margin:-0.2rem 0 0.8rem;">양도일 현재 이 주택 외에 보유 중인 주택이 없어야 1세대1주택 비과세를 검토합니다. 다른 주택을 보유한 채 상속주택을 먼저 파시면 비과세를 받지 못합니다(시행령 제155조제2항은 일반주택을 팔 때만 상속주택을 주택 수에서 빼줍니다). 동일세대 상속이면 피상속인 보유기간도 합산됩니다(제154조제8항제3호). 조정대상지역 거주 2년 요건은 이 계산기에 입력란이 없어 별도로 확인해야 합니다.</p>
         <div class="pen-field">
           <label>양도일 현재 다른 주택 보유</label>
           <select id="ipt-otherHomeAtSale"><option value="no">없음</option><option value="yes">있음</option></select>
         </div>
+        <div class="pen-field-row">
+          <div class="pen-field"><label>조정대상지역 여부</label><select id="ipt-adjustedArea"><option value="no">아니오</option><option value="yes">예</option></select></div>
+          <div class="pen-field"><label>양도일 현재 보유 중인 다른 주택 수</label><select id="ipt-otherHomeCount"><option value="1">1채(합쳐서 2주택)</option><option value="2">2채 이상(합쳐서 3주택 이상)</option></select></div>
+        </div>
+        <p class="pen-field-hint" style="margin:-0.4rem 0 0.8rem;">조정대상지역에 있는 다주택을 양도하면 양도소득세가 중과됩니다(2주택 +20%p, 3주택 이상 +30%p, 장기보유특별공제 배제). 보유기간 2년 이상인 주택을 2026년 5월 9일까지 양도한 경우는 한시적으로 배제됩니다(소득세법 제104조제7항, 시행령 제167조의3·제167조의10).</p>
         <div class="pen-field-row">
           <div class="pen-field"><label>피상속인 보유기간(년)</label><input type="number" id="ipt-decedentYears" value="10" step="0.1"></div>
           <div class="pen-field"><label>상속인 보유기간(년)</label><input type="number" id="ipt-heirYears" value="0.5" step="0.1"></div>
@@ -19692,6 +19709,16 @@ function cc2Num(id) { var el = document.getElementById(id); return el ? Math.max
 var cc2EvLabel = { 3: '높음', 2: '보통', 1: '낮음' };
 var cc2LikeColor = { '높음': '#38a169', '보통': '#dd6b20', '낮음': '#c0392b' };
 var cc2QualLabel = { no: '아니오', yes: '예', uncertain: '판단 필요' };
+// 민법 §1008 단서(2026.3.17 개정) — 증여·유증이 기여에 대한 보상으로 행해진 경우 그 기여에
+// 상응하는 범위에서 특별수익(및 유류분 기초재산 가산)에서 제외된다. 증빙수준별로 가장 유력한
+// 인정비율(0%/50%/100%)을 적용한 제외액을 계산한다 — 유류분 제외 계산과 구체적 상속분(특별수익)
+// 계산 양쪽에서 재사용한다.
+function cc2GiftAppliedExclude(g) {
+if (!g || g.qual === 'no') return 0;
+var claim = Math.min(g.exclude, g.amount);
+var pct = g.evidence === 3 ? 1.0 : (g.evidence === 1 ? 0 : 0.5);
+return claim * pct;
+}
 function cc2Heirs() {
   var a = [];
   var sp = cc2Num('cc2-spouse') > 0;
@@ -19724,10 +19751,12 @@ window.cc2AddGift = function() {
   if (!a) { alert('증여·유증 가액을 입력하세요.'); return; }
   var qual = document.getElementById('cc2-giftQual').value;
   var exclude = qual !== 'no' ? Math.min(a, cc2Num('cc2-giftExclude')) : 0;
+  var giftTypeEl = document.getElementById('cc2-giftType');
   cc2Gifts.push({
     person: document.getElementById('cc2-giftPerson').value, amount: a,
     date: document.getElementById('cc2-giftDate').value, memo: document.getElementById('cc2-giftMemo').value,
-    qual: qual, evidence: Number(document.getElementById('cc2-giftEvidence').value), exclude: exclude
+    qual: qual, evidence: Number(document.getElementById('cc2-giftEvidence').value), exclude: exclude,
+    type: giftTypeEl ? giftTypeEl.value : 'gift'
   });
   document.getElementById('cc2-giftAmount').value = 0;
   document.getElementById('cc2-giftMemo').value = '';
@@ -19750,12 +19779,12 @@ window.cc2DelContrib = function(i) { cc2Contribs.splice(i, 1); cc2Render(); };
 
 function cc2Render() {
   document.getElementById('cc2-giftTable').innerHTML =
-    '<tr><th>수증자</th><th>가액</th><th>증여일</th><th>판단</th><th>증빙</th><th>주장 보상액</th><th>메모</th><th></th></tr>' +
+    '<tr><th>수증자</th><th>가액</th><th>구분</th><th>증여일</th><th>판단</th><th>증빙</th><th>주장 보상액</th><th>메모</th><th></th></tr>' +
     cc2Gifts.map(function(g, i) {
       var qualCell = g.qual === 'no' ? '아니오' : ('<strong>' + cc2QualLabel[g.qual] + '</strong>');
       var evCell = g.qual === 'no' ? '-' : cc2EvLabel[g.evidence];
       var exCell = g.qual === 'no' ? '-' : cc2Won(g.exclude);
-      return '<tr><td>' + g.person + '</td><td>' + cc2Won(g.amount) + '</td><td>' + (g.date || '-') + '</td><td>' + qualCell + '</td><td>' + evCell + '</td><td>' + exCell + '</td><td>' + (g.memo || '-') + '</td><td><button type="button" class="hn-cancel" style="padding:0.3rem 0.7rem; font-size:0.75rem; color:#c0392b; border-color:#f0b8b8;" onclick="cc2DelGift(' + i + ')">삭제</button></td></tr>';
+      return '<tr><td>' + g.person + '</td><td>' + cc2Won(g.amount) + '</td><td>' + (g.type === 'bequest' ? '유증' : '사전증여') + '</td><td>' + (g.date || '-') + '</td><td>' + qualCell + '</td><td>' + evCell + '</td><td>' + exCell + '</td><td>' + (g.memo || '-') + '</td><td><button type="button" class="hn-cancel" style="padding:0.3rem 0.7rem; font-size:0.75rem; color:#c0392b; border-color:#f0b8b8;" onclick="cc2DelGift(' + i + ')">삭제</button></td></tr>';
     }).join('');
   document.getElementById('cc2-contribTable').innerHTML =
     '<tr><th>기여자</th><th>기여분 주장액</th><th>동거</th><th>간병</th><th>비용</th><th>재산기여</th><th>증빙</th><th></th></tr>' +
@@ -19777,7 +19806,7 @@ window.cc2Calc = function() {
   cc2Populate();
   var hs = cc2Shares(cc2Heirs());
   var net = Math.max(0, cc2Num('cc2-real') + cc2Num('cc2-finance') + cc2Num('cc2-stock') + cc2Num('cc2-other') - cc2Num('cc2-debt'));
-  var giftTotal = cc2Gifts.reduce(function(s, g) { return s + g.amount; }, 0);
+  var giftTotal = cc2Gifts.filter(function(g) { return g.type !== 'bequest'; }).reduce(function(s, g) { return s + g.amount; }, 0); // 유증은 2번 재산에 이미 포함되어 있어 가산하지 않음(§1113①) — 생전 증여만 가산
   var baseBefore = net + giftTotal; // 증여 전부 반영, 제외 전(효과③의 종점)
 
   document.getElementById('cc2-netEstate').textContent = cc2Won(net);
@@ -19876,6 +19905,24 @@ window.cc2Calc = function() {
       '<tr><th>상속인</th><th>법정상속지분</th><th>기여분 미반영 구체적 상속분</th><th>종합 참고 추정 반영 후</th></tr>' + combinedHeirRows;
   }
 
+  // ── 특별수익(증여·유증) 반영 구체적 상속분 — 민법 §1008 ──
+  // 위에서 계산한 기여분 반영 1차 배분액(기여 기록이 없으면 법정상속분 그대로)에서, 각자가
+  // 받은 특별수익(생전증여+유증)을 공제한다. 기여에 대한 보상으로 인정된 부분(cc2GiftAppliedExclude)은
+  // §1008 단서에 따라 특별수익에서도 제외한다. 특별수익이 1차 배분액을 초과하면(초과특별수익자)
+  // §1008 본문에 따라 구체적 상속분은 0으로 하고, 초과분의 재분배(초과특별수익자 조정)는 반영하지 않는다.
+  var specialBenefitEl = document.getElementById('cc2-specialBenefitTable');
+  if (specialBenefitEl) {
+    var sbRows = hs.map(function(h) {
+      var firstAllocation = personNames.length ? (adjEstateCombined * h.share + (combinedAppliedByName[h.name] || 0)) : (net * h.share);
+      var benefit = cc2Gifts.filter(function(g) { return g.person === h.name; })
+        .reduce(function(sum, g) { return sum + Math.max(0, g.amount - cc2GiftAppliedExclude(g)); }, 0);
+      var finalShare = Math.max(0, firstAllocation - benefit);
+      var excess = benefit > firstAllocation;
+      return '<tr><td>' + h.name + '</td><td>' + cc2Won(firstAllocation) + '</td><td>' + cc2Won(benefit) + '</td><td>' + cc2Won(finalShare) + (excess ? ' <span style="color:#c0392b; font-weight:700;">(초과수익)</span>' : '') + '</td></tr>';
+    }).join('');
+    specialBenefitEl.innerHTML = '<tr><th>상속인</th><th>기여분 반영 1차 배분액</th><th>받은 특별수익(증여+유증, 보상 인정분 제외)</th><th>특별수익 반영 구체적 상속분(참고)</th></tr>' + sbRows;
+  }
+
   // ── ② 보상적 증여 제외 시나리오 (증여 항목별) ── 3번에서 "예"/"판단 필요"로
   // 표시한 증여마다, 그 항목의 주장 보상액·증빙수준을 기준으로 0%/50%/100%를
   // 따로 계산한다(대법원 2026.5.29. 선고 2024다208261 판결이 확인한 구조).
@@ -19891,7 +19938,7 @@ window.cc2Calc = function() {
       var g = x.g;
       var claim = Math.min(g.exclude, g.amount);
       var pct = g.evidence === 3 ? 1.0 : (g.evidence === 1 ? 0 : 0.5);
-      var applied = claim * pct;
+      var applied = cc2GiftAppliedExclude(g);
       combinedGiftExclude += applied;
       var likelihood = { A: '보통', B: '보통', C: '보통' };
       if (g.evidence === 3) likelihood = { A: '낮음', B: '보통', C: '높음' };
@@ -20155,6 +20202,20 @@ if (base <= brackets[i][0]) return base * brackets[i][1] - brackets[i][2];
 }
 return 0;
 }
+// 다주택 중과(소득세법 §104⑦): 누진세율 각 구간에 addPct%p를 가산해 그대로 적분(공식 누진공제표를 쓰지 않고 구간별 한계세율로 직접 계산 — 수학적으로 동일).
+function iptHeavyProgressiveTax(base, addPct) {
+if (base <= 0) return 0;
+var th = [14000000,50000000,88000000,150000000,300000000,500000000,1000000000,Infinity];
+var baseRates = [0.06,0.15,0.24,0.35,0.38,0.40,0.42,0.45];
+var tax = 0, prev = 0;
+for (var i = 0; i < th.length; i++) {
+var upper = Math.min(base, th[i]);
+if (upper > prev) tax += (upper - prev) * (baseRates[i] + addPct / 100);
+prev = th[i];
+if (base <= th[i]) break;
+}
+return tax;
+}
 // 소득세법 §95② 표1 장기보유특별공제율(%). 상속자산은 상속개시일 취득이므로 상속개시일~양도일이 보유기간(§95④; 가업상속공제 적용분만 피상속인 취득일 기산)
 function iptLtcTable1(years) {
 if (!(years >= 3)) return 0;
@@ -20205,19 +20266,68 @@ var house = document.getElementById('ipt-assetType').value === 'house';
 var six = years > 0 && years <= 0.5;
 var five = years > 0 && years <= 5;
 var isMultiHome = house && (existing >= 1 || other);
+var adjustedArea = document.getElementById('ipt-adjustedArea').value === 'yes';
+var otherHomeCountRaw = parseInt(document.getElementById('ipt-otherHomeCount').value, 10);
+var otherHomeCount = other ? (otherHomeCountRaw || 1) : 0;
+var totalHomesAtSale = 1 + otherHomeCount;
+var exemptionYears = same ? ((parseFloat(document.getElementById('ipt-decedentYears').value) || 0) + years) : years;
+var isExempt = house && !other && exemptionYears >= 2;
+var highRatio = (isExempt && high && sv > 0) ? Math.max(0, (sv - 1200000000) / sv) : 0;
+if (isExempt && high) {
+var gainTaxable = gain * highRatio;
+var ltcTaxable = ltc * highRatio;
+taxable = Math.max(0, gainTaxable - ltcTaxable - bd);
+tax = iptProgressiveTax(taxable);
+local = tax * 0.1;
+total = tax + local;
+} else if (isExempt) {
+taxable = 0;
+tax = 0;
+local = 0;
+total = 0;
+}
+
+var heavyHoldOK = holdForRate >= 2;
+var suspensionEndDate = new Date(Date.UTC(2026, 4, 9));
+var saleDateObj = sd ? new Date(sd) : null;
+var heavySuspended = heavyHoldOK && saleDateObj && !isNaN(saleDateObj) && saleDateObj <= suspensionEndDate;
+var heavyAddPct = totalHomesAtSale >= 3 ? 30 : 20;
+var isHeavy = house && !isExempt && other && adjustedArea && totalHomesAtSale >= 2 && !heavySuspended;
+if (isHeavy) {
+ltc = 0;
+taxable = Math.max(0, gain - bd);
+var heavyProgTax = iptHeavyProgressiveTax(taxable, heavyAddPct);
+var heavyShortTax = taxable * stRate;
+tax = Math.max(heavyProgTax, heavyShortTax);
+local = tax * 0.1;
+total = tax + local;
+}
 
 var notes = [];
 if (six) notes.push('상속 후 약 6개월 이내: 양도세 비과세가 아니라 상속재산 시가 판단상 거래가액의 중요성을 검토해야 합니다.');
 if (house && existing === 1 && inheritedFirst) notes.push('기존주택 1채를 보유한 상태에서 상속주택을 먼저 양도하는 경우: 상속주택 특례 적용 여부를 별도로 확인해야 합니다.');
 if (house && existing === 1 && !inheritedFirst) notes.push('기존 일반주택을 먼저 양도하는 경우: 소득세법 시행령 제155조 제2항의 상속주택 특례 적용 가능성을 검토하세요.');
 if (same) notes.push('동일세대 상속: 피상속인과 상속인의 보유·거주기간 통산 가능 여부를 개별 확인하세요.');
-if (high) notes.push('양도가액 12억원 초과: 1세대1주택 비과세가 인정되는 경우에도 고가주택 과세부분 계산이 필요할 수 있습니다.');
+if (high && !isExempt) notes.push('양도가액 12억원 초과: 1세대1주택 비과세가 인정되는 경우에도 고가주택 과세부분 계산이 필요할 수 있습니다.');
 if (five) notes.push('상속 후 5년 이내: 상속주택 관련 주택 수·특례 규정을 확인하세요. "5년 이내 무조건 중과 배제"로 해석하면 안 됩니다.');
-if (isMultiHome) notes.push('🔴 2026년 5월 9일부로 다주택자 조정대상지역 중과 한시배제가 종료되었습니다. 조정대상지역에 다주택을 보유하고 계시다면 이 계산에 반영되지 않은 최대 +30%p 중과세율과 장기보유특별공제 배제가 적용되어 실제 세액이 훨씬 클 수 있습니다.');
+if (house && other) {
+if (!adjustedArea) {
+notes.push('다른 주택을 보유한 상태의 양도이지만 "비조정대상지역"으로 입력하셔서 다주택 중과를 적용하지 않았습니다(소득세법 제104조제7항은 조정대상지역 소재 주택만 중과합니다). 조정대상지역 지정 현황은 양도일 기준으로 별도 확인하세요.');
+} else if (heavySuspended) {
+notes.push('조정대상지역 다주택 중과는 보유기간 2년 이상인 주택을 2026년 5월 9일까지 양도하는 경우 한시 배제됩니다(소득세법 시행령 제167조의3제1항제12호의2·제167조의10). 이번 양도는 이 요건을 충족해 중과세율을 적용하지 않았습니다. 다만 2026년 5월 9일까지 토지거래허가를 신청했거나 매매계약을 체결한 경우의 연장기한(같은 호 나목·다목, 2026년 9월 9일 또는 11월 9일 등)은 이 계산기가 반영하지 않으니 해당 시 별도 확인하세요.');
+} else if (isHeavy) {
+notes.push('조정대상지역 다주택(이 주택 포함 총 ' + totalHomesAtSale + '주택) 중과세율을 적용했습니다: 양도소득세 누진세율 각 구간에 ' + heavyAddPct + '%p를 가산하고(소득세법 제104조제7항), 장기보유특별공제는 배제했습니다(제95조제2항). 보유기간 2년 미만이면 중과세율 산출세액과 단기세율 산출세액 중 큰 금액을 적용합니다(제104조제7항 후단). 2026년 5월 9일 이후 양도분부터 중과가 재시행된 것으로 보고 계산했으며, 장기임대주택 등 제외 사유(시행령 제167조의3·제167조의10)는 반영하지 않았습니다.');
+}
+}
 if (stRate > 0) notes.push('단기양도세율 적용: 상속자산의 세율 판정 보유기간은 피상속인 취득일부터 셉니다(소득세법 §104②1호). 피상속인 보유 ' + (parseFloat(document.getElementById('ipt-decedentYears').value) || 0) + '년 + 상속 후 ' + heirYrs.toFixed(2) + '년 = ' + holdForRate.toFixed(2) + '년이라 ' + (stRate * 100).toFixed(0) + '%를 적용해 누진세와 비교한 큰 세액을 썼습니다(§104①).');
-if (String(ltRaw).trim() !== '' && lt > autoLt && years > 0) notes.push('입력하신 장기보유특별공제율 ' + lt + '%는 일반 자산 법정 표1(' + autoLt + '%)보다 큽니다. 1세대1주택 표2(보유+거주)에 해당하는 경우가 아니라면 낮춰 주세요.');
+if (!isHeavy && String(ltRaw).trim() !== '' && lt > autoLt && years > 0) notes.push('입력하신 장기보유특별공제율 ' + lt + '%는 일반 자산 법정 표1(' + autoLt + '%)보다 큽니다. 1세대1주택 표2(보유+거주)에 해당하는 경우가 아니라면 낮춰 주세요.');
 if (years > 0 && years < 3) notes.push('상속개시일부터 3년 미만 보유라 장기보유특별공제가 없습니다(소득세법 §95②). 장특 보유기간은 상속개시일부터 셉니다(§95④; 가업상속공제 적용분만 피상속인 취득일부터).');
-notes.push('장기보유특별공제율 ' + lt + '%' + (String(ltRaw).trim() === '' ? '(법정 표1 자동)' : '(입력값)') + '를 적용했습니다. 조정대상지역 다주택 중과·미등기 등은 반영하지 않습니다.');
+if (!isHeavy) notes.push('장기보유특별공제율 ' + lt + '%' + (String(ltRaw).trim() === '' ? '(법정 표1 자동)' : '(입력값)') + '를 적용했습니다. 미등기 양도 등은 반영하지 않습니다.');
+if (isExempt && high) {
+notes.unshift('1세대1주택 비과세 요건(양도일 현재 1주택, 보유기간 ' + exemptionYears.toFixed(2) + '년으로 2년 이상)을 충족해 양도가액 12억원 초과분만 과세합니다(소득세법 제89조제1항제3호, 시행령 제160조). 과세대상 비율 = (양도가액 - 12억원) / 양도가액 = ' + (highRatio * 100).toFixed(1) + '%. 장기보유특별공제도 같은 비율로 안분했습니다. 조정대상지역에서 취득한 주택이면 2년 거주 요건도 충족해야 하며(시행령 제154조제1항), 이 계산기는 거주기간을 입력받지 않으므로 별도로 확인하세요.');
+} else if (isExempt) {
+notes.unshift('1세대1주택 비과세 요건(양도일 현재 1주택, 보유기간 ' + exemptionYears.toFixed(2) + '년으로 2년 이상, 양도가액 12억원 이하)을 충족해 양도소득세가 전액 비과세입니다(소득세법 제89조제1항제3호). ' + (same ? '피상속인과 동일세대로 보유·거주한 기간을 합산했습니다(시행령 제154조제8항제3호). ' : '') + '조정대상지역에서 취득한 주택이면 2년 거주 요건도 충족해야 하며(시행령 제154조제1항), 이 계산기는 거주기간을 입력받지 않으므로 별도로 확인하세요.');
+}
 
 document.getElementById('ipt-result').innerHTML =
 '<div class="pen-instrument-card">' +
@@ -20237,6 +20347,8 @@ document.getElementById('ipt-result').innerHTML =
 '<tr><td>장기보유특별공제</td><td>' + iptWon(ltc) + '</td></tr>' +
 '<tr><td>기본공제</td><td>' + iptWon(bd) + '</td></tr>' +
 '<tr><td>과세표준(단순계산)</td><td>' + iptWon(taxable) + '</td></tr>' +
+'<tr><td>1세대1주택 비과세 판정</td><td>' + (isExempt ? (high ? '고가주택(12억원 초과분만 과세)' : '비과세(전액)') : (house ? '비과세 아님(다주택 또는 보유기간 미충족)' : '해당 없음(주택 아님)')) + '</td></tr>' +
+'<tr><td>다주택 중과 판정</td><td>' + (!house ? '해당 없음(주택 아님)' : (isExempt ? '해당 없음(1세대1주택 비과세)' : (!other ? '해당 없음(다주택 아님)' : (!adjustedArea ? '중과 대상 아님(비조정대상지역, 입력 기준)' : (heavySuspended ? '한시 배제(보유 2년 이상·2026-05-09 이전 양도)' : (isHeavy ? ('중과 적용(총 ' + totalHomesAtSale + '주택, +' + heavyAddPct + '%p, 장특공제 배제)') : '중과 대상 아님')))))) + '</td></tr>' +
 '<tr><td>양도소득세(누진세율, 1~2년 미만 보유는 단기세율과 비교)</td><td>' + iptWon(tax) + '</td></tr>' +
 '<tr><td>지방소득세(양도소득세의 10% 가정)</td><td>' + iptWon(local) + '</td></tr>' +
 '</table></div>' +
@@ -20886,7 +20998,7 @@ var CALC_NUM_IDS = [
 'c_gift','c_gift_deduct','c_nonheir_bequest','c_disclaim_received',
 'c_disposed','c_explained','c_estimated',
 'c_funeral','c_funeral_tomb','c_deposit','c_debt',
-'c_spouse_amount','c_financial','c_paid_tax','c_business','c_cohabit_amount',
+'c_spouse_amount','c_financial','c_paid_tax','c_business','c_business_years','c_cohabit_amount',
 'c_minor_years','c_disabled_years',
 'g_new','g_debt','g_prior','g_priortax','g_marriage_amt','g_used_deduct','g_prior_taxbase'
 ];
@@ -20975,7 +21087,7 @@ var dimFieldIds = [
 'c_children', 'c_ascendants',
 'c_minor_count', 'c_minor_years', 'c_elderly_count',
 'c_disabled_count', 'c_disabled_years',
-'c_financial', 'c_business',
+'c_financial', 'c_business', 'c_business_years',
 'c_cohabit_house', 'c_cohabit_amount'
 ];
 dimFieldIds.forEach(function(id) {
@@ -21708,6 +21820,8 @@ var children     = parseInt(document.getElementById('c_children').value)     || 
 var financial    = parseNum(document.getElementById('c_financial').value)    * 1000;
 var paidTax      = parseNum(document.getElementById('c_paid_tax').value)     * 1000;
 var business     = parseNum(document.getElementById('c_business').value)     * 1000;
+var businessYearsEl = document.getElementById('c_business_years');
+var businessYears = businessYearsEl ? Math.max(0, parseNum(businessYearsEl.value)) : 0;
 var cohabitChecked = document.getElementById('c_cohabit_house') ? document.getElementById('c_cohabit_house').checked : false;
 var cohabitAmt    = cohabitChecked ? parseNum(document.getElementById('c_cohabit_amount').value) * 1000 : 0;
 var cohabitDeduct = (cohabitChecked && isResident) ? Math.min(cohabitAmt, 600000000) : 0; // 최대 6억원, 비거주자는 배제(§18②)
@@ -21806,10 +21920,12 @@ financialDeduct = (financial <= 20000000)
 : Math.min(Math.max(Math.round(financial * 0.2), 20000000), 200000000);
 }
 
-// 가업상속공제 — 영위기간별 한도 300억(10년↑)·400억(20년↑)·600억(30년↑).
-// 영위기간 입력을 받지 않으므로 최대치인 600억(=6,000,000만원)으로 상한만 건다.
-// 비거주자는 가업상속공제도 배제(§18②).
-var businessDeduct = isResident ? Math.min(business, 60000000000) : 0;
+// 가업상속공제 — 영위기간별 한도(상증법 §18조의2①, 2023.1.1. 이후 상속분):
+// 1호 10년 이상 20년 미만 300억원, 2호 20년 이상 30년 미만 400억원, 3호 30년 이상 600억원.
+// 10년 미만이면 '가업'의 정의(피상속인이 10년 이상 계속경영) 자체를 충족하지 못해
+// 공제가 전혀 적용되지 않는다. 비거주자는 가업상속공제도 배제(§18②).
+var businessCap = businessYears >= 30 ? 60000000000 : businessYears >= 20 ? 40000000000 : businessYears >= 10 ? 30000000000 : 0;
+var businessDeduct = (isResident && businessYears >= 10) ? Math.min(business, businessCap) : 0;
 var totalDeductRaw = lumpDeduct + spouseDeduct + financialDeduct + businessDeduct + cohabitDeduct;
 
 // 상속공제 적용의 한도 (상증법 §24) — 사전증여 등으로 재산이 상속세과세가액에서 이미
@@ -21874,7 +21990,10 @@ s('r-lump').textContent       = '△ ' + fmt(lumpDeduct) +
 : ' (일괄공제 5억 적용)'));
 s('r-spouse').textContent     = !isResident ? '해당 없음 (비거주자 — §18②)' : spouseAlive   ? '△ ' + fmt(spouseDeduct)    : '해당 없음';
 s('r-financial').textContent  = !isResident ? '해당 없음 (비거주자 — §18②)' : financial > 0 ? '△ ' + fmt(financialDeduct) : '해당 없음';
-s('r-business').textContent   = !isResident ? '해당 없음 (비거주자 — §18②)' : business > 0  ? '△ ' + fmt(businessDeduct)  : '해당 없음';
+s('r-business').textContent   = !isResident ? '해당 없음 (비거주자 — §18②)'
+: (business > 0 && businessYears < 10) ? '해당 없음 (계속경영기간 ' + businessYears + '년 — 가업상속공제는 10년 이상 계속경영해야 적용됩니다, 상증법 §18조의2①)'
+: business > 0 ? '△ ' + fmt(businessDeduct) + ' (계속경영 ' + businessYears + '년 → 한도 ' + fmt(businessCap) + ')'
+: '해당 없음';
 s('r-cohabit').textContent    = !isResident ? '해당 없음 (비거주자 — §18②)' : cohabitChecked ? '△ ' + fmt(cohabitDeduct)   : '해당 없음';
 s('r-totaldeduct-raw').textContent = fmt(totalDeductRaw);
 
