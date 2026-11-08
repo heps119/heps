@@ -2214,6 +2214,9 @@
   .hn-edit-modal { background: var(--white); max-width: 61.25rem; width: 100%; max-height: 92vh; overflow-y: auto; padding: 2rem 2.5rem 2rem; border-top: 3px solid var(--gold); position: relative; }
   /* 수정 모달 내 툴바 - 모달 기준 상단 고정 */
   .hn-edit-modal .hed-toolbar { top: 0; }
+  /* 공지사항 편집 모달 내 툴바 */
+  #noticeForm .hed-toolbar { top: 0; }
+  #noticeForm .hed-editor { min-height: 220px; }
   /* 스크랩 모달 내 툴바 */
   .scrap-modal .hed-toolbar { top: 0; }
   .hn-edit-title { font-family: 'Noto Serif KR', serif; font-size: 1.1rem; color: var(--navy); margin-bottom: 1.5rem; font-weight: 600; }
@@ -4594,7 +4597,7 @@
      테두리는 CSS가 입혀야 보이는데, 그 CSS가 편집 화면 전용이었기 때문).
      이 리치 에디터로 작성한 내용이 실제로 표시되는 4곳(헤리티지 노트 본문, FAQ 답변,
      신탁 서비스 세부 항목, Case Study 핵심 성과) 전부에 동일한 표 스타일을 적용한다. */
-  .hn-modal-body table, .faq-a-inner table, .sd-body-inner table, .cs-card-result-text table {
+  .hn-modal-body table, .faq-a-inner table, .sd-body-inner table, .cs-card-result-text table, .notice-body-inner table {
     border-collapse: collapse; width: 100%;
     margin: 1rem 0; font-size: 0.92rem;
   }
@@ -9419,6 +9422,7 @@ if (foot) foot.style.display = 'none';
           <button onclick="closeNoticeForm()" style="position:absolute; top:0.8rem; right:1rem; background:none; border:none; font-size:1.5rem; line-height:1; cursor:pointer; color:rgba(255,255,255,0.7);" aria-label="닫기">×</button>
           <h4 style="color:var(--white); font-family:'Noto Serif KR',serif; font-size:1rem; margin:0 0 1rem; padding-right:2rem;">공지 등록 / 수정</h4>
           <input type="text" id="noticeTitle" placeholder="공지 제목" style="width:100%; background:#0a1628; border:1px solid rgba(255,255,255,0.12); color:white; padding:0.6rem 0.8rem; font-size:0.92rem; font-family:'Noto Sans KR',sans-serif; box-sizing:border-box; margin-bottom:0.7rem; outline:none;">
+          <label style="display:block; font-size:0.8rem; color:rgba(255,255,255,0.9); margin-bottom:0.35rem;">공지 내용</label>
           <textarea id="noticeContent" placeholder="공지 내용" rows="10" style="width:100%; background:#0a1628; border:1px solid rgba(255,255,255,0.12); color:white; padding:0.6rem 0.8rem; font-size:0.88rem; line-height:1.6; font-family:'Noto Sans KR',sans-serif; box-sizing:border-box; resize:vertical; outline:none; margin-bottom:0.7rem;"></textarea>
           <label style="display:flex; align-items:center; gap:0.4rem; font-size:0.8rem; color:rgba(255,255,255,0.9); margin-bottom:0.8rem; cursor:pointer;">
             <input type="checkbox" id="noticeShowAsPopup"> 팝업으로도 노출 (방문자에게 팝업창으로 표시)
@@ -9446,7 +9450,7 @@ if (foot) foot.style.display = 'none';
     <div style="padding:2rem 2.5rem;">
       <h3 id="detailViewTitle" style="font-family:'Noto Serif KR',serif; font-size:1.15rem; color:var(--navy); margin-bottom:0.4rem; padding-right:2rem;"></h3>
       <div id="detailViewMeta" style="font-size:0.75rem; color:#4d4d4d; margin-bottom:1.2rem;"></div>
-      <div id="detailViewBody" style="font-size:0.9rem; color:#333; line-height:1.8;"></div>
+      <div id="detailViewBody" class="notice-body-inner" style="font-size:0.9rem; color:#333; line-height:1.8;"></div>
     </div>
   </div>
 </div>
@@ -16138,11 +16142,16 @@ return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g
 var rawContent = n.content || '';
 var contentHtml;
 if (dark) {
-var flat = rawContent.replace(/\s+/g, ' ').trim();
+// 리치 에디터로 쓴 내용(HTML 태그 포함)도 미리보기는 글자만 뽑아서 짧게 보여준다.
+var tmpStrip = document.createElement('div');
+tmpStrip.innerHTML = rawContent;
+var plainText = tmpStrip.innerText || tmpStrip.textContent || '';
+var flat = plainText.replace(/\s+/g, ' ').trim();
 var EXCERPT_LEN = 55;
 contentHtml = escLite(flat.slice(0, EXCERPT_LEN)) + (flat.length > EXCERPT_LEN ? '…' : '');
 } else {
-contentHtml = escLite(rawContent).replace(/\n/g, '<br>');
+// 전체 목록은 리치 에디터 서식(굵게·목록·표 등)이 그대로 보이도록 이스케이프 없이 넣는다.
+contentHtml = rawContent.replace(/\n/g, '<br>');
 }
 
 return '<div onclick="openNoticeDetail(' + n.id + ')" style="padding:0.9rem 0; border-bottom:1px solid ' + borderCol + '; cursor:pointer;">' +
@@ -16153,7 +16162,7 @@ return '<div onclick="openNoticeDetail(' + n.id + ')" style="padding:0.9rem 0; b
 (n.show_as_popup ? '<span style="font-size:0.68rem; background:rgba(52,152,219,0.15); color:#5dade2; border:1px solid rgba(52,152,219,0.3); padding:1px 6px; border-radius:2px; margin-right:0.4rem;">🔔 팝업 노출중</span>' : '') +
 n.title +
 '</div>' +
-'<div style="font-size:0.8rem; color:' + bodyCol + '; line-height:1.6;">' + contentHtml + '</div>' +
+'<div class="notice-body-inner" style="font-size:0.8rem; color:' + bodyCol + '; line-height:1.6;">' + contentHtml + '</div>' +
 (n.attachment_url
 ? '<a href="' + n.attachment_url + '" target="_blank" rel="noopener" onclick="event.stopPropagation();" ' +
 'style="display:inline-flex;align-items:center;gap:0.3rem;margin-top:0.4rem;font-size:0.75rem;color:' + (dark ? 'var(--gold2)' : '#8a6d1f') + ';text-decoration:none;border:1px solid rgba(201,168,76,0.4);border-radius:2px;padding:2px 8px;">' +
@@ -16222,6 +16231,8 @@ if (!n) return;
 window._editingNoticeId = id;
 titleEl.value = n.title || '';
 contentEl.value = n.content || '';
+setTinyVal('noticeContent', n.content || '');
+initHedEditor('noticeContent');
 popupEl.checked = !!n.show_as_popup;
 var fs = document.getElementById('noticeFileStatus');
 if (fs) fs.textContent = n.attachment_url ? ('현재 첨부: ' + (n.attachment_name || '파일') + ' (새 파일을 선택하면 교체됩니다)') : '';
@@ -16231,6 +16242,8 @@ if (submitBtn) submitBtn.textContent = '수정 저장';
 window._editingNoticeId = null;
 titleEl.value = '';
 contentEl.value = '';
+setTinyVal('noticeContent', '');
+initHedEditor('noticeContent');
 popupEl.checked = false;
 _noticePendingFile = null;
 var fs2 = document.getElementById('noticeFileStatus');
@@ -16245,6 +16258,7 @@ window._editingNoticeId = null;
 document.getElementById('noticeForm').style.display = 'none';
 document.getElementById('noticeTitle').value = '';
 document.getElementById('noticeContent').value = '';
+setTinyVal('noticeContent', '');
 document.getElementById('noticeShowAsPopup').checked = false;
 var fileEl = document.getElementById('noticeFileInput');
 if (fileEl) fileEl.value = '';
@@ -16274,7 +16288,8 @@ return Promise.resolve(null);
 
 window.submitNotice = function() {
 var title = document.getElementById('noticeTitle').value.trim();
-var content = document.getElementById('noticeContent').value.trim();
+var hedNoticeEditor = document.getElementById('hed-noticeContent');
+var content = hedNoticeEditor ? hedCleanHtml(hedNoticeEditor.innerHTML).trim() : document.getElementById('noticeContent').value.trim();
 var showAsPopup = document.getElementById('noticeShowAsPopup').checked;
 if (!title) { alert('공지 제목을 입력해 주세요.'); return; }
 
@@ -20607,6 +20622,11 @@ btn.disabled = false; btn.textContent = '💬 입력하신 내용 기준으로, 
 };
 
 function autoLink(text) {
+// 리치 에디터로 작성된 내용(이미 HTML 태그 포함)은 아래 정규식 자동 링크 변환을 건너뛴다
+// (href 속성 안 URL까지 다시 매치돼 <a> 안에 <a>가 끼어들어 마크업이 깨지는 것을 방지).
+if (/<[a-z][\s\S]*>/i.test(text)) {
+return text.replace(/\n/g, '<br>');
+}
 // 이메일
 text = text.replace(/([\w._%+\-]+@[\w.\-]+\.[a-zA-Z]{2,})/g,
 '<a href="mailto:$1" style="color:var(--gold);text-decoration:underline;">$1</a>');
