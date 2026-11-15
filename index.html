@@ -16297,7 +16297,14 @@ return Promise.resolve(null);
 window.submitNotice = function() {
 var title = document.getElementById('noticeTitle').value.trim();
 var hedNoticeEditor = document.getElementById('hed-noticeContent');
-var content = hedNoticeEditor ? hedCleanHtml(hedNoticeEditor.innerHTML).trim() : document.getElementById('noticeContent').value.trim();
+var noticeTa = document.getElementById('noticeContent');
+// </> 소스보기를 아직 WYSIWYG로 되돌리지 않은 상태(textarea가 화면에 떠 있는 상태)라면
+// 방금 입력/붙여넣은 textarea 값을 그대로 쓴다 — 숨겨진(아직 동기화 안 된) 에디터
+// innerHTML을 읽어서 내용이 빈 값으로 저장되는 것을 막는다.
+var noticeInSourceMode = noticeTa && noticeTa.style.display === 'block';
+var content = noticeInSourceMode
+  ? noticeTa.value.trim()
+  : (hedNoticeEditor ? hedCleanHtml(hedNoticeEditor.innerHTML).trim() : noticeTa.value.trim());
 var showAsPopup = document.getElementById('noticeShowAsPopup').checked;
 if (!title) { alert('공지 제목을 입력해 주세요.'); return; }
 
