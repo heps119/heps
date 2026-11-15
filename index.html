@@ -12071,6 +12071,11 @@ if (!editor || !ta) return;
 var showingSource = ta.style.display !== 'none' && ta.style.display !== '';
 if (!showingSource) {
 // WYSIWYG → HTML 소스 보기 (크기조절용 핸들·래퍼는 실제 내용이 아니므로 제거하고 보여준다)
+// 원래 배경/글자색을 저장해 둔다 — 공지사항처럼 어두운 배경 입력칸에서 복귀할 때
+// 그대로 되돌리기 위함(소스 보기 중에는 항상 흰 배경+어두운 글자로 고정해 안 보이는
+// 문제를 막는다).
+ta.dataset.hedOrigBg = ta.style.background || '';
+ta.dataset.hedOrigColor = ta.style.color || '';
 ta.value = hedCleanHtml(editor.innerHTML);
 editor.style.display = 'none';
 ta.style.display = 'block';
@@ -12083,6 +12088,7 @@ ta.style.padding = '1rem';
 ta.style.boxSizing = 'border-box';
 ta.style.border = '1px solid #ddd';
 ta.style.borderRadius = '3px';
+ta.style.background = '#fff';
 ta.style.color = '#333';
 btn.style.background = 'var(--navy)';
 btn.style.color = '#fff';
@@ -12091,6 +12097,8 @@ btn.style.color = '#fff';
 editor.innerHTML = ta.value;
 hedSetupTableResize(editor);
 ta.style.display = 'none';
+ta.style.background = ta.dataset.hedOrigBg || '';
+ta.style.color = ta.dataset.hedOrigColor || '';
 editor.style.display = '';
 btn.style.background = '';
 btn.style.color = '';
